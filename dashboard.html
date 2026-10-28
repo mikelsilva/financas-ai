@@ -1,0 +1,219 @@
+<title>Finanças AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  /* Layout: painel de leitura — faixa de KPIs no topo, dois gráficos lado a lado, lista de recorrências ao pé. */
+  :root{
+    --bg:#f4f6f5; --surface:#ffffff; --ink:#15211e; --muted:#5c6b66; --line:#e2e8e4;
+    --accent:#0f766e; --accent-soft:#d5e8e4;
+    --pos:#15803d; --neg:#c2563b;
+    --grid:#eef2f0;
+    --shadow:0 1px 2px rgba(20,40,35,.05), 0 8px 24px rgba(20,40,35,.06);
+    --ff-display:"Sora",system-ui,sans-serif;
+    --ff-body:"Inter",system-ui,sans-serif;
+    --ff-data:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0e1513; --surface:#162220; --ink:#e8efec; --muted:#9aaaa4; --line:#243430;
+    --accent:#4cc3b4; --accent-soft:#1d322e;
+    --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0e1513; --surface:#162220; --ink:#e8efec; --muted:#9aaaa4; --line:#243430;
+    --accent:#4cc3b4; --accent-soft:#1d322e;
+    --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--ff-body);line-height:1.5;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+  .wrap{max-width:1080px;margin:0 auto;padding-block:32px 48px}
+  .num{font-family:var(--ff-data);font-variant-numeric:tabular-nums}
+
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 20px;margin-bottom:28px}
+  .brand{display:flex;flex-direction:column;gap:4px}
+  .brand h1{font-family:var(--ff-display);font-weight:700;font-size:clamp(1.5rem,4vw,2rem);margin:0;letter-spacing:-.02em}
+  .brand p{margin:0;color:var(--muted);font-size:.92rem}
+  .flags{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .flag{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+    padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+  .flag.live{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
+  .theme-btn{font-family:var(--ff-body);font-size:.8rem;cursor:pointer;background:var(--surface);
+    color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi .lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .kpi .val{font-family:var(--ff-data);font-weight:600;font-size:1.5rem;margin-top:6px;letter-spacing:-.01em}
+  .kpi .val.pos{color:var(--pos)} .kpi .val.neg{color:var(--neg)}
+  .kpi .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow);min-width:0}
+  .card h2{font-family:var(--ff-display);font-weight:600;font-size:1.05rem;margin:0 0 2px}
+  .card .cap{color:var(--muted);font-size:.82rem;margin:0 0 18px}
+
+  /* barras por categoria (CSS) */
+  .bars{display:flex;flex-direction:column;gap:11px}
+  .bar-row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:12px}
+  .bar-row .name{font-size:.85rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track{height:11px;background:var(--grid);border-radius:999px;overflow:hidden}
+  .fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 55%,var(--surface)));min-width:4px}
+  .bar-row .amt{font-family:var(--ff-data);font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  figure{margin:0}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:.8rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  .rec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+  .rec ul{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+  .rec li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:11px}
+  .rec .rn{font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rec .rv{font-family:var(--ff-data);font-size:.85rem;color:var(--neg);white-space:nowrap}
+  .rec .mo{font-size:.68rem;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 8px;font-weight:600;white-space:nowrap}
+
+  .ask{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;box-shadow:var(--shadow)}
+  .ask .q{font-size:.92rem}.ask .q b{font-weight:600}
+  .ask .a{font-family:var(--ff-data);font-weight:600;color:var(--accent);font-size:1.05rem;margin-left:auto}
+
+  footer{margin-top:26px;color:var(--muted);font-size:.8rem;text-align:center}
+  footer code{font-family:var(--ff-data);background:var(--grid);padding:1px 6px;border-radius:5px}
+  @media (max-width:640px){.grid2{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Finanças AI</h1>
+      <p>Consolidador pessoal · C6 · Nubank · Rico — sem API paga</p>
+    </div>
+    <div class="flags">
+      <span class="flag live">● pipeline ao vivo</span>
+      <span class="flag">dados de exemplo</span>
+      <button class="theme-btn" id="theme" type="button">tema</button>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Gastos por categoria</h2>
+      <p class="cap">Todo o período · classificado pelo categorizador por regras</p>
+      <div class="bars" id="bars"></div>
+    </section>
+
+    <section class="card">
+      <h2>Evolução mensal</h2>
+      <p class="cap">Entradas e saídas por mês (R$)</p>
+      <figure>
+        <svg id="chart" viewBox="0 0 560 300" role="img" aria-label="Entradas e saídas por mês"></svg>
+      </figure>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--pos)"></i>Entradas</span>
+        <span><i class="dot" style="background:var(--neg)"></i>Saídas</span>
+        <span><i class="dot" style="background:var(--accent)"></i>Saldo</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="rec">
+    <h2 style="font-family:var(--ff-display);font-weight:600;font-size:1.05rem;margin:0 0 2px">Cobranças recorrentes detectadas</h2>
+    <p class="cap" style="color:var(--muted);font-size:.82rem;margin:0">Mesma cobrança em 3+ meses — assinaturas, aplicações e hábitos</p>
+    <ul id="rec"></ul>
+  </section>
+
+  <div class="ask">
+    <span class="q">Pergunta de exemplo: <b>"quanto gastei com Delivery no total?"</b></span>
+    <span class="a">R$ 458,46</span>
+  </div>
+
+  <footer>
+    Gerado pelo pipeline <code>financas_ai</code> · conectores de arquivo + <code>pynubank</code> + Open Finance Brasil (sandbox) · categorizador + análises em pandas
+  </footer>
+</div>
+
+<script>
+const DADOS = {
+  kpis:{transacoes:145,bancos:["c6","nubank","rico"],cobertura:100.0,total_saidas:15974.94,total_entradas:33077.74},
+  categorias:[{nome:"Investimentos",valor:6000.0},{nome:"Compras",valor:2610.53},{nome:"Mercado",valor:2285.04},{nome:"Transporte",valor:1823.12},{nome:"Assinaturas",valor:1210.59},{nome:"Saude",valor:642.17},{nome:"Restaurante",valor:618.27},{nome:"Delivery",valor:458.46},{nome:"Educacao",valor:326.76}],
+  meses:[{mes:"2026-05",entradas:5500.0,saidas:2340.85,saldo:3159.15},{mes:"2026-06",entradas:5500.0,saidas:1992.86,saldo:3507.14},{mes:"2026-07",entradas:5511.36,saidas:3205.8,saldo:2305.56},{mes:"2026-08",entradas:5500.0,saidas:2508.63,saldo:2991.37},{mes:"2026-09",entradas:5500.0,saidas:2879.54,saldo:2620.46},{mes:"2026-10",entradas:5566.38,saidas:3047.26,saldo:2519.12}],
+  recorrencias:[{nome:"Aplicação Tesouro Selic",valor:1000.0,meses:6},{nome:"Uber *Trip",valor:23.41,meses:6},{nome:"Netflix.com",valor:48.11,meses:5},{nome:"Starbucks",valor:34.21,meses:5},{nome:"Uber *Trip (déb.)",valor:28.4,meses:5},{nome:"Starbucks (déb.)",valor:27.62,meses:5}]
+};
+
+const brl = v => "R$ " + v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const brlShort = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
+
+// KPIs
+const k = DADOS.kpis;
+document.getElementById("kpis").innerHTML = [
+  {lbl:"Transações",val:k.transacoes,sub:k.bancos.map(b=>b.toUpperCase()).join(" · ")},
+  {lbl:"Categorização",val:k.cobertura.toFixed(0)+"%",sub:"cobertura por regras"},
+  {lbl:"Entradas",val:brlShort(k.total_entradas),cls:"pos",sub:"período (6 meses)"},
+  {lbl:"Saídas",val:brlShort(k.total_saidas),cls:"neg",sub:"período (6 meses)"},
+  {lbl:"Saldo",val:brlShort(k.total_entradas-k.total_saidas),cls:"pos",sub:"entradas − saídas"},
+].map(x=>`<div class="kpi"><div class="lbl">${x.lbl}</div><div class="val ${x.cls||''}">${x.val}</div><div class="sub">${x.sub}</div></div>`).join("");
+
+// Barras por categoria
+const maxCat = Math.max(...DADOS.categorias.map(c=>c.valor));
+document.getElementById("bars").innerHTML = DADOS.categorias.map(c=>`
+  <div class="bar-row">
+    <span class="name">${c.nome}</span>
+    <span class="track"><span class="fill" style="width:${(c.valor/maxCat*100).toFixed(1)}%"></span></span>
+    <span class="amt">${brlShort(c.valor)}</span>
+  </div>`).join("");
+
+// Recorrências
+document.getElementById("rec").innerHTML = DADOS.recorrencias.map(r=>`
+  <li><span class="rn">${r.nome}</span><span class="rv">${brl(r.valor)}</span><span class="mo">${r.meses}m</span></li>`).join("");
+
+// Gráfico de barras agrupadas (SVG)
+function desenharGrafico(){
+  const W=560,H=300, pad={t:16,r:12,b:38,l:52};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const m=DADOS.meses;
+  const maxV=Math.ceil(Math.max(...m.map(d=>Math.max(d.entradas,d.saidas)))/1000)*1000;
+  const x0=i=> pad.l + i*(iw/m.length);
+  const bw=(iw/m.length);
+  const y=v=> pad.t + ih - (v/maxV)*ih;
+  const css=getComputedStyle(document.documentElement);
+  const cGrid=css.getPropertyValue('--grid'), cMut=css.getPropertyValue('--muted'),
+        cPos=css.getPropertyValue('--pos'), cNeg=css.getPropertyValue('--neg'), cAcc=css.getPropertyValue('--accent');
+  let s="";
+  // grid + eixo Y
+  for(let i=0;i<=4;i++){const v=maxV*i/4; const yy=y(v);
+    s+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="${cGrid}" stroke-width="1"/>`;
+    s+=`<text x="${pad.l-8}" y="${yy+4}" text-anchor="end" font-size="10" font-family="IBM Plex Mono,monospace" fill="${cMut}">${(v/1000).toFixed(0)}k</text>`;
+  }
+  // barras
+  m.forEach((d,i)=>{
+    const cx=x0(i), gap=6, barW=(bw-gap*2-6)/2;
+    const xe=cx+gap, xs=xe+barW+6;
+    s+=`<rect x="${xe}" y="${y(d.entradas)}" width="${barW}" height="${pad.t+ih-y(d.entradas)}" rx="3" fill="${cPos}"/>`;
+    s+=`<rect x="${xs}" y="${y(d.saidas)}" width="${barW}" height="${pad.t+ih-y(d.saidas)}" rx="3" fill="${cNeg}"/>`;
+    s+=`<text x="${cx+bw/2}" y="${H-pad.b+18}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono,monospace" fill="${cMut}">${d.mes.slice(5)}/${d.mes.slice(2,4)}</text>`;
+  });
+  // linha de saldo
+  const pts=m.map((d,i)=>`${x0(i)+bw/2},${y(d.saldo)}`).join(" ");
+  s+=`<polyline points="${pts}" fill="none" stroke="${cAcc}" stroke-width="2" stroke-linejoin="round"/>`;
+  m.forEach((d,i)=>{ s+=`<circle cx="${x0(i)+bw/2}" cy="${y(d.saldo)}" r="3" fill="${cAcc}"/>`; });
+  document.getElementById("chart").innerHTML=s;
+}
+desenharGrafico();
+
+// toggle de tema — redesenha o gráfico com as cores novas
+document.getElementById("theme").addEventListener("click",()=>{
+  const r=document.documentElement;
+  const dark = r.getAttribute("data-theme")==="dark" ||
+    (!r.getAttribute("data-theme") && matchMedia("(prefers-color-scheme:dark)").matches);
+  r.setAttribute("data-theme", dark?"light":"dark");
+  requestAnimationFrame(desenharGrafico);
+});
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change",desenharGrafico);
+</script>
