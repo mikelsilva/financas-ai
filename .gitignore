@@ -1,0 +1,16 @@
+# dados financeiros reais — nunca commitar
+dados/*
+!dados/gerar_exemplos.py
+!dados/exemplos/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# credenciais Nubank (conector ao vivo) — NUNCA commitar
+*.p12
+nubank_cert*
+.env
+.env.local
