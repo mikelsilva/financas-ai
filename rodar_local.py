@@ -47,8 +47,14 @@ def main() -> None:
     try:
         df = nubank_online.ler(cpf, senha, cert)
     except Exception as e:
-        print(f"\n❌ Não consegui conectar: {e}")
-        print("Confira CPF/senha e tente de novo. (Erros do Nubank são comuns na 1ª vez.)")
+        msg = str(e)
+        print(f"\n❌ Não consegui conectar: {msg}")
+        if "403" in msg:
+            print("O Nubank bloqueou a requisição da API não-oficial (anti-robô).")
+            print("Isso é instável por natureza. Use o caminho confiável:")
+            print("  exporte o extrato (OFX/CSV) e rode:  python rodar_arquivo.py SEU_EXTRATO.ofx")
+        else:
+            print("Confira CPF/senha e tente de novo. (Erros do Nubank são comuns na 1ª vez.)")
         sys.exit(1)
 
     df = categorizador.categorizar(df)
