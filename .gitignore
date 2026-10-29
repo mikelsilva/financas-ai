@@ -14,3 +14,6 @@ __pycache__/
 nubank_cert*
 .env
 .env.local
+
+# dashboard com dados reais
+dashboard_local.html

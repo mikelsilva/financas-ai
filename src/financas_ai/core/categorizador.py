@@ -15,19 +15,20 @@ import pandas as pd
 # (categoria, padrao_regex). Tudo e comparado em minusculas.
 # Edite aqui pra ensinar o sistema a reconhecer novos estabelecimentos.
 REGRAS: list[tuple[str, str]] = [
-    ("Renda",            r"salario|pagamento recebido|pix recebido|transferencia recebida|rendimento|dividendo|jcp"),
-    ("Delivery",         r"ifood|rappi|ze delivery|zedelivery|uber eats"),
-    ("Transporte",       r"uber|99app|99 \*|cabify|posto|shell|ipiranga|combustivel|estacionamento|metro|bilhete unico"),
-    ("Mercado",          r"supermerc|mercado|carrefour|pao de acucar|assai|atacadao|hortifruti|sacolao"),
-    ("Restaurante",      r"restaurante|bar |lanchonete|padaria|cafe|starbucks|mcdonald|burger|pizza"),
-    ("Assinaturas",      r"netflix|spotify|amazon prime|disney|hbo|max|youtube premium|apple.com/bill|google.*youtube|icloud"),
-    ("Saude",            r"farmacia|drogaria|drogasil|raia|pacheco|hospital|clinica|laboratorio|unimed|odonto"),
-    ("Educacao",         r"faculdade|curso|udemy|alura|coursera|escola|livraria"),
-    ("Moradia",          r"aluguel|condominio|energia|enel|cpfl|light|sabesp|comgas|internet|vivo|claro|tim|net "),
-    ("Compras",          r"amazon|mercado livre|mercadolivre|shopee|aliexpress|magazine|americanas|renner|zara|shopping"),
-    ("Investimentos",    r"aplicacao|resgate|tesouro|cdb|aplic\.|compra de ativo|corretagem|b3"),
-    ("Tarifas",          r"tarifa|anuidade|juros|iof|multa|encargo"),
-    ("Transferencias",   r"pix enviado|ted |doc |transferencia enviada"),
+    ("Renda",            r"sal[aá]rio|pagamento recebido|transfer[eê]ncia recebida|pix recebido|rendimento|dividendo|jcp|cashback|estorno|reembolso"),
+    ("Investimentos",    r"\brdb\b|aplica[cç][aã]o|resgate|tesouro|\bcdb\b|\blci\b|\blca\b|renda fixa|caixinha|nu reserva|compra de ativo|corretagem|\bb3\b"),
+    ("Dívidas",          r"renegocia|pend[eê]ncia|acordo de|parcelamento de fatura|pagamento de fatura|cobran[cç]a"),
+    ("Delivery",         r"ifood|rappi|z[eé] delivery|uber eats|aiqfome|delivery"),
+    ("Transporte",       r"uber|99app|99pop|99 \*|cabify|posto|shell|ipiranga|petrobras|combust[ií]vel|estacionamento|metr[oô]|bilhete [uú]nico|passagem|latam|gol |azul "),
+    ("Mercado",          r"supermerc|mercado\b|carrefour|p[aã]o de a[cç][uú]car|assa[ií]|atacad|atacarejo|hortifrut|sacol[aã]o|a[cç]ougue|mercearia|com[eé]rcio de alim|comercio ataca|\bataca\b"),
+    ("Saude",            r"farm[aá]cia|drogaria|drogasil|raia|pacheco|pague menos|hospital|cl[ií]nica|laborat[oó]rio|unimed|odonto|academia|smart ?fit|procfit|bio ?ritmo|gympass|totalpass|wellhub"),
+    ("Educacao",         r"faculdade|fiap|curso|udemy|alura|coursera|escola|livraria|mensalidade"),
+    ("Moradia",          r"aluguel|condom[ií]nio|energia|enel|cpfl|light\b|sabesp|comg[aá]s|internet|vivo\b|claro\b|\btim\b|net\b|telefon"),
+    ("Assinaturas",      r"netflix|spotify|amazon prime|prime video|disney|\bhbo\b|\bmax\b|youtube|apple\.com|icloud|playstation|xbox|canva|chatgpt|openai"),
+    ("Compras",          r"amazon|mercado ?livre|mercado ?pago|shopee|aliexpress|magazine|magalu|americanas|renner|riachuelo|zara|c&a|nike|adidas|centauro|netshoes|ecommer|shein|loja\b|shopping"),
+    ("Restaurante",      r"restaurante|\bbar\b|lanchonete|padaria|pizzaria|hamburgueria|cafeteria|caf[eé]|starbucks|mcdonald|burger|pizza|subway|outback"),
+    ("Tarifas",          r"tarifa|anuidade|\biof\b|multa|encargo|\btaxa\b|juros"),
+    ("Transferências",   r"pix enviado|transfer[eê]ncia enviada|\bted\b|\bdoc\b"),
     ("Saques",           r"saque"),
 ]
 

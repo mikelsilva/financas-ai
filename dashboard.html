@@ -140,12 +140,12 @@
 </div>
 
 <script>
-const DADOS = {
+const DADOS = /*DADOS_INICIO*/{
   kpis:{transacoes:145,bancos:["c6","nubank","rico"],cobertura:100.0,total_saidas:15974.94,total_entradas:33077.74},
   categorias:[{nome:"Investimentos",valor:6000.0},{nome:"Compras",valor:2610.53},{nome:"Mercado",valor:2285.04},{nome:"Transporte",valor:1823.12},{nome:"Assinaturas",valor:1210.59},{nome:"Saude",valor:642.17},{nome:"Restaurante",valor:618.27},{nome:"Delivery",valor:458.46},{nome:"Educacao",valor:326.76}],
   meses:[{mes:"2026-05",entradas:5500.0,saidas:2340.85,saldo:3159.15},{mes:"2026-06",entradas:5500.0,saidas:1992.86,saldo:3507.14},{mes:"2026-07",entradas:5511.36,saidas:3205.8,saldo:2305.56},{mes:"2026-08",entradas:5500.0,saidas:2508.63,saldo:2991.37},{mes:"2026-09",entradas:5500.0,saidas:2879.54,saldo:2620.46},{mes:"2026-10",entradas:5566.38,saidas:3047.26,saldo:2519.12}],
   recorrencias:[{nome:"Aplicação Tesouro Selic",valor:1000.0,meses:6},{nome:"Uber *Trip",valor:23.41,meses:6},{nome:"Netflix.com",valor:48.11,meses:5},{nome:"Starbucks",valor:34.21,meses:5},{nome:"Uber *Trip (déb.)",valor:28.4,meses:5},{nome:"Starbucks (déb.)",valor:27.62,meses:5}]
-};
+}/*DADOS_FIM*/;
 
 const brl = v => "R$ " + v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const brlShort = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
