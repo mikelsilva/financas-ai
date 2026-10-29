@@ -17,3 +17,6 @@ nubank_cert*
 
 # dashboard com dados reais
 dashboard_local.html
+
+# estado do bot (ids já vistos)
+dados/estado_bot.json

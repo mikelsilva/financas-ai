@@ -140,6 +140,25 @@ O conector detecta sozinho: **sem chave → modo mock; com chave → assina o JW
 
 > O que está pronto é o **contrato e o fluxo** (OAuth2/FAPI, consentimento, mapeamento das APIs). O acesso ao sandbox oficial depende do seu cadastro e certificados no diretório do Open Finance — que são de graça, mas exigem esse setup.
 
+## Bot financeiro (cérebro do assistente)
+
+O módulo `financas_ai.bot` é o "cérebro" que um canal (WhatsApp/Telegram) usa. Funciona por linha de comando:
+
+```bash
+python bot.py sync                      # puxa da Pluggy e mostra as compras NOVAS
+python bot.py perguntar "quanto gastei com delivery?"
+python bot.py relatorio                 # resumo pronto pra enviar
+```
+
+- **`sync`** compara com `dados/estado_bot.json` e devolve só o que chegou desde a última vez — base do "me avisa quando comprar".
+- **`perguntar`** responde via **Ollama** local (grátis, offline). Sem Ollama, cai num modo simples por regras.
+
+Para as respostas com IA, instale o [Ollama](https://ollama.com) e baixe um modelo:
+
+```bash
+ollama pull llama3.2       # ou outro modelo; defina OLLAMA_MODEL para trocar
+```
+
 ## Próximos passos (roadmap)
 
 - [ ] Camada conversacional local com **Ollama** (pergunta em português → filtro no pandas), mantendo o custo zero
