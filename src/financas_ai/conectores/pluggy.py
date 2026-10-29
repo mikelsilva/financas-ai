@@ -18,6 +18,7 @@ Credenciais ficam na SUA maquina (variaveis de ambiente), nunca no codigo.
 from __future__ import annotations
 
 import os
+from datetime import date, timedelta
 
 import pandas as pd
 import requests
@@ -42,12 +43,19 @@ def _get(caminho: str, api_key: str, params: dict | None = None) -> dict:
     return r.json()
 
 
-def _transacoes(api_key: str, account_id: str) -> list[dict]:
-    """Segue a paginacao da Pluggy (results/totalPages) e junta tudo."""
+def _transacoes(api_key: str, account_id: str, dias: int = 720) -> list[dict]:
+    """Segue a paginacao da Pluggy (results/totalPages) e junta tudo.
+
+    A Pluggy exige um intervalo de datas: sem 'from'/'to' o endpoint responde
+    410 Gone. Por padrao buscamos os ultimos ~24 meses.
+    """
+    de = (date.today() - timedelta(days=dias)).isoformat()
+    ate = date.today().isoformat()
     itens, pagina = [], 1
     while True:
         payload = _get("/transactions", api_key,
-                       {"accountId": account_id, "page": pagina, "pageSize": 500})
+                       {"accountId": account_id, "from": de, "to": ate,
+                        "page": pagina, "pageSize": 500})
         itens.extend(payload.get("results", []))
         if pagina >= payload.get("totalPages", 1):
             break
@@ -97,11 +105,22 @@ def ler(item_ids: list[str] | str,
     api_key = _auth(client_id, client_secret)
 
     linhas: list[dict] = []
+    contas_lidas = 0
+    erros: list[str] = []
     for item in item_ids:
         contas = _get("/accounts", api_key, {"itemId": item}).get("results", [])
         for acc in contas:
             tipo = "cartao" if str(acc.get("type", "")).upper() == "CREDIT" else "conta corrente"
-            linhas += _para_linhas(_transacoes(api_key, acc["id"]), tipo)
+            try:
+                linhas += _para_linhas(_transacoes(api_key, acc["id"]), tipo)
+                contas_lidas += 1
+            except requests.HTTPError as e:
+                # nao derruba tudo por causa de uma conta problematica
+                erros.append(f"{acc.get('name') or acc['id']}: {e}")
+
+    # so levanta erro se NENHUMA conta pode ser lida
+    if contas_lidas == 0 and erros:
+        raise RuntimeError("Falha ao ler transações:\n  " + "\n  ".join(erros))
 
     if not linhas:
         return schema.tabela_vazia()
