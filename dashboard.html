@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-  /* Layout: painel de leitura — faixa de KPIs no topo, dois gráficos lado a lado, lista de recorrências ao pé. */
+  /* Layout: painel interativo — controles no topo, KPIs, dois gráficos, e listas (maiores gastos, recorrentes, futuras). */
   :root{
     --bg:#f4f6f5; --surface:#ffffff; --ink:#15211e; --muted:#5c6b66; --line:#e2e8e4;
     --accent:#0f766e; --accent-soft:#d5e8e4;
@@ -15,205 +15,305 @@
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
     --bg:#0e1513; --surface:#162220; --ink:#e8efec; --muted:#9aaaa4; --line:#243430;
-    --accent:#4cc3b4; --accent-soft:#1d322e;
-    --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
-    color-scheme:dark;
+    --accent:#4cc3b4; --accent-soft:#1d322e; --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35); color-scheme:dark;
   }}
   :root[data-theme="dark"]{
     --bg:#0e1513; --surface:#162220; --ink:#e8efec; --muted:#9aaaa4; --line:#243430;
-    --accent:#4cc3b4; --accent-soft:#1d322e;
-    --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
-    color-scheme:dark;
+    --accent:#4cc3b4; --accent-soft:#1d322e; --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35); color-scheme:dark;
   }
   *{box-sizing:border-box}
   body{background:var(--bg);color:var(--ink);font-family:var(--ff-body);line-height:1.5;
     padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
-  .wrap{max-width:1080px;margin:0 auto;padding-block:32px 48px}
+  .wrap{max-width:1120px;margin:0 auto;padding-block:30px 48px}
   .num{font-family:var(--ff-data);font-variant-numeric:tabular-nums}
 
-  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 20px;margin-bottom:28px}
-  .brand{display:flex;flex-direction:column;gap:4px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 20px;margin-bottom:22px}
   .brand h1{font-family:var(--ff-display);font-weight:700;font-size:clamp(1.5rem,4vw,2rem);margin:0;letter-spacing:-.02em}
-  .brand p{margin:0;color:var(--muted);font-size:.92rem}
-  .flags{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .brand p{margin:4px 0 0;color:var(--muted);font-size:.92rem}
+  .flags{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center}
   .flag{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
     padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
   .flag.live{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
   .theme-btn{font-family:var(--ff-body);font-size:.8rem;cursor:pointer;background:var(--surface);
     color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
 
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
-  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
-  .kpi .lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
-  .kpi .val{font-family:var(--ff-data);font-weight:600;font-size:1.5rem;margin-top:6px;letter-spacing:-.01em}
+  /* controles */
+  .controls{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-end;margin-bottom:22px}
+  .ctl{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .ctl > span{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px}
+  .tab{font-family:var(--ff-body);font-size:.85rem;cursor:pointer;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 13px;white-space:nowrap}
+  .tab[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+  select{font-family:var(--ff-body);font-size:.85rem;background:var(--surface);color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:150px}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:13px;margin-bottom:20px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 17px;box-shadow:var(--shadow)}
+  .kpi .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .kpi .val{font-family:var(--ff-data);font-weight:600;font-size:1.4rem;margin-top:5px;letter-spacing:-.01em}
   .kpi .val.pos{color:var(--pos)} .kpi .val.neg{color:var(--neg)}
-  .kpi .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+  .kpi .sub{font-size:.76rem;color:var(--muted);margin-top:2px}
 
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow);min-width:0}
-  .card h2{font-family:var(--ff-display);font-weight:600;font-size:1.05rem;margin:0 0 2px}
-  .card .cap{color:var(--muted);font-size:.82rem;margin:0 0 18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .grid2.b{grid-template-columns:1fr 1fr}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:19px 21px;box-shadow:var(--shadow);min-width:0}
+  .card h2{font-family:var(--ff-display);font-weight:600;font-size:1.03rem;margin:0 0 2px}
+  .card .cap{color:var(--muted);font-size:.8rem;margin:0 0 16px}
 
-  /* barras por categoria (CSS) */
-  .bars{display:flex;flex-direction:column;gap:11px}
-  .bar-row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:12px}
-  .bar-row .name{font-size:.85rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .track{height:11px;background:var(--grid);border-radius:999px;overflow:hidden}
+  .bars{display:flex;flex-direction:column;gap:10px}
+  .bar-row{display:grid;grid-template-columns:104px 1fr auto;align-items:center;gap:11px}
+  .bar-row .name{font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track{height:10px;background:var(--grid);border-radius:999px;overflow:hidden}
   .fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 55%,var(--surface)));min-width:4px}
-  .bar-row .amt{font-family:var(--ff-data);font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+  .bar-row .amt{font-family:var(--ff-data);font-size:.8rem;color:var(--muted)}
+  .empty{color:var(--muted);font-size:.85rem;padding:8px 0}
 
   figure{margin:0}
   svg{display:block;width:100%;height:auto;overflow:visible}
-  .legend{display:flex;gap:16px;margin-top:12px;font-size:.8rem;color:var(--muted)}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:.78rem;color:var(--muted);flex-wrap:wrap}
   .legend span{display:inline-flex;align-items:center;gap:6px}
   .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
 
-  .rec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
-  .rec ul{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-  .rec li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:11px}
-  .rec .rn{font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rec .rv{font-family:var(--ff-data);font-size:.85rem;color:var(--neg);white-space:nowrap}
-  .rec .mo{font-size:.68rem;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 8px;font-weight:600;white-space:nowrap}
+  .lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .lista li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline;
+    padding:10px 0;border-bottom:1px solid var(--line)}
+  .lista li:last-child{border-bottom:none}
+  .lista .d{font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lista .sub{font-size:.72rem;color:var(--muted);grid-column:1}
+  .lista .v{font-family:var(--ff-data);font-size:.84rem;white-space:nowrap}
+  .lista .v.neg{color:var(--neg)} .lista .v.pos{color:var(--pos)}
+  .chip{font-size:.66rem;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 7px;font-weight:600}
 
-  .ask{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px;
-    display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;box-shadow:var(--shadow)}
-  .ask .q{font-size:.92rem}.ask .q b{font-weight:600}
-  .ask .a{font-family:var(--ff-data);font-weight:600;color:var(--accent);font-size:1.05rem;margin-left:auto}
-
-  footer{margin-top:26px;color:var(--muted);font-size:.8rem;text-align:center}
+  footer{margin-top:24px;color:var(--muted);font-size:.78rem;text-align:center}
   footer code{font-family:var(--ff-data);background:var(--grid);padding:1px 6px;border-radius:5px}
-  @media (max-width:640px){.grid2{grid-template-columns:1fr}}
+  @media (max-width:680px){.grid2,.grid2.b{grid-template-columns:1fr}}
 </style>
 
 <div class="wrap">
   <header>
     <div class="brand">
       <h1>Finanças AI</h1>
-      <p>Consolidador pessoal · C6 · Nubank · Rico — sem API paga</p>
+      <p id="subtitle">Consolidador pessoal via Open Finance</p>
     </div>
     <div class="flags">
       <span class="flag live">● pipeline ao vivo</span>
-      <span class="flag">dados de exemplo</span>
+      <span class="flag" id="fonte-badge">dados de exemplo</span>
       <button class="theme-btn" id="theme" type="button">tema</button>
     </div>
   </header>
+
+  <div class="controls">
+    <label class="ctl">
+      <span>Fonte</span>
+      <div class="tabs" id="tabs-fonte"></div>
+    </label>
+    <label class="ctl">
+      <span>Mês</span>
+      <select id="sel-mes"></select>
+    </label>
+  </div>
 
   <section class="kpis" id="kpis"></section>
 
   <div class="grid2">
     <section class="card">
       <h2>Gastos por categoria</h2>
-      <p class="cap">Todo o período · classificado pelo categorizador por regras</p>
+      <p class="cap" id="cap-cat">Classificado pelo categorizador por regras</p>
       <div class="bars" id="bars"></div>
     </section>
-
     <section class="card">
       <h2>Evolução mensal</h2>
       <p class="cap">Entradas e saídas por mês (R$)</p>
-      <figure>
-        <svg id="chart" viewBox="0 0 560 300" role="img" aria-label="Entradas e saídas por mês"></svg>
-      </figure>
+      <figure><svg id="chart" viewBox="0 0 560 290" role="img" aria-label="Entradas e saídas por mês"></svg></figure>
       <div class="legend">
         <span><i class="dot" style="background:var(--pos)"></i>Entradas</span>
         <span><i class="dot" style="background:var(--neg)"></i>Saídas</span>
-        <span><i class="dot" style="background:var(--accent)"></i>Saldo</span>
       </div>
     </section>
   </div>
 
-  <section class="rec">
-    <h2 style="font-family:var(--ff-display);font-weight:600;font-size:1.05rem;margin:0 0 2px">Cobranças recorrentes detectadas</h2>
-    <p class="cap" style="color:var(--muted);font-size:.82rem;margin:0">Mesma cobrança em 3+ meses — assinaturas, aplicações e hábitos</p>
-    <ul id="rec"></ul>
-  </section>
-
-  <div class="ask">
-    <span class="q">Pergunta de exemplo: <b>"quanto gastei com Delivery no total?"</b></span>
-    <span class="a">R$ 458,46</span>
+  <div class="grid2 b">
+    <section class="card">
+      <h2>Maiores gastos</h2>
+      <p class="cap">No período/filtro selecionado</p>
+      <ul class="lista" id="maiores"></ul>
+    </section>
+    <section class="card">
+      <h2>Cobranças recorrentes</h2>
+      <p class="cap">Mesma cobrança em 3+ meses</p>
+      <ul class="lista" id="recorrentes"></ul>
+    </section>
   </div>
 
+  <section class="card" style="margin-top:16px">
+    <h2>Cobranças futuras</h2>
+    <p class="cap">Parcelas e débitos já lançados com data à frente</p>
+    <ul class="lista" id="futuras"></ul>
+  </section>
+
   <footer>
-    Gerado pelo pipeline <code>financas_ai</code> · conectores de arquivo + <code>pynubank</code> + Open Finance Brasil (sandbox) · categorizador + análises em pandas
+    Gerado pelo pipeline <code>financas_ai</code> · Open Finance (Pluggy) + conectores de arquivo · categorização e análises em pandas
   </footer>
 </div>
 
 <script>
 const DADOS = /*DADOS_INICIO*/{
-  kpis:{transacoes:145,bancos:["c6","nubank","rico"],cobertura:100.0,total_saidas:15974.94,total_entradas:33077.74},
-  categorias:[{nome:"Investimentos",valor:6000.0},{nome:"Compras",valor:2610.53},{nome:"Mercado",valor:2285.04},{nome:"Transporte",valor:1823.12},{nome:"Assinaturas",valor:1210.59},{nome:"Saude",valor:642.17},{nome:"Restaurante",valor:618.27},{nome:"Delivery",valor:458.46},{nome:"Educacao",valor:326.76}],
-  meses:[{mes:"2026-05",entradas:5500.0,saidas:2340.85,saldo:3159.15},{mes:"2026-06",entradas:5500.0,saidas:1992.86,saldo:3507.14},{mes:"2026-07",entradas:5511.36,saidas:3205.8,saldo:2305.56},{mes:"2026-08",entradas:5500.0,saidas:2508.63,saldo:2991.37},{mes:"2026-09",entradas:5500.0,saidas:2879.54,saldo:2620.46},{mes:"2026-10",entradas:5566.38,saidas:3047.26,saldo:2519.12}],
-  recorrencias:[{nome:"Aplicação Tesouro Selic",valor:1000.0,meses:6},{nome:"Uber *Trip",valor:23.41,meses:6},{nome:"Netflix.com",valor:48.11,meses:5},{nome:"Starbucks",valor:34.21,meses:5},{nome:"Uber *Trip (déb.)",valor:28.4,meses:5},{nome:"Starbucks (déb.)",valor:27.62,meses:5}]
+  meta:{exemplo:true, subtitle:"Consolidador pessoal · dados de exemplo"},
+  transacoes:[
+    {d:"2026-09-05",desc:"Salário",v:5500,banco:"nubank",conta:"conta corrente",cat:"Renda"},
+    {d:"2026-09-07",desc:"iFood *Restaurante",v:-52.9,banco:"nubank",conta:"cartao",cat:"Delivery"},
+    {d:"2026-09-09",desc:"Supermercado Pão de Açúcar",v:-210.4,banco:"nubank",conta:"conta corrente",cat:"Mercado"},
+    {d:"2026-09-11",desc:"Uber *Trip",v:-28.5,banco:"nubank",conta:"cartao",cat:"Transporte"},
+    {d:"2026-09-14",desc:"Netflix.com",v:-44.9,banco:"nubank",conta:"cartao",cat:"Assinaturas"},
+    {d:"2026-09-18",desc:"Drogasil",v:-78.2,banco:"nubank",conta:"conta corrente",cat:"Saude"},
+    {d:"2026-09-22",desc:"Aplicação RDB",v:-500,banco:"nubank",conta:"conta corrente",cat:"Investimentos"},
+    {d:"2026-09-26",desc:"Amazon BR",v:-189.9,banco:"nubank",conta:"cartao",cat:"Compras"},
+    {d:"2026-10-05",desc:"Salário",v:5500,banco:"nubank",conta:"conta corrente",cat:"Renda"},
+    {d:"2026-10-06",desc:"Pix enviado - Aluguel",v:-1800,banco:"nubank",conta:"conta corrente",cat:"Moradia"},
+    {d:"2026-10-07",desc:"iFood *Restaurante",v:-61.2,banco:"nubank",conta:"cartao",cat:"Delivery"},
+    {d:"2026-10-10",desc:"Posto Shell",v:-160,banco:"nubank",conta:"cartao",cat:"Transporte"},
+    {d:"2026-10-12",desc:"PROCFIT ACADEMIA",v:-120.3,banco:"nubank",conta:"conta corrente",cat:"Saude"},
+    {d:"2026-10-14",desc:"Spotify",v:-21.9,banco:"nubank",conta:"cartao",cat:"Assinaturas"},
+    {d:"2026-10-19",desc:"Hortifruti Nações",v:-96.7,banco:"nubank",conta:"conta corrente",cat:"Mercado"},
+    {d:"2026-10-24",desc:"Fisia Nike Ecommer 3/7",v:-110.1,banco:"nubank",conta:"cartao",cat:"Compras"},
+    {d:"2026-11-24",desc:"Fisia Nike Ecommer 4/7",v:-110.1,banco:"nubank",conta:"cartao",cat:"Compras"},
+    {d:"2026-12-24",desc:"Fisia Nike Ecommer 5/7",v:-110.1,banco:"nubank",conta:"cartao",cat:"Compras"}
+  ]
 }/*DADOS_FIM*/;
 
+const HOJE = new Date().toISOString().slice(0,10);
 const brl = v => "R$ " + v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const brlShort = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
+const cap = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
+const NOME_BANCO = {pluggy:"Nubank", nubank:"Nubank", c6:"C6", rico:"Rico"};
+const NOME_CONTA = {"conta corrente":"Conta", "cartao":"Cartão", "extrato":"Extrato", "corretora":"Corretora"};
+const fonteKey = t => t.banco+"|"+t.conta;
+const fonteLabel = t => (NOME_BANCO[t.banco]||cap(t.banco))+" · "+(NOME_CONTA[t.conta]||cap(t.conta));
 
-// KPIs
-const k = DADOS.kpis;
-document.getElementById("kpis").innerHTML = [
-  {lbl:"Transações",val:k.transacoes,sub:k.bancos.map(b=>b.toUpperCase()).join(" · ")},
-  {lbl:"Categorização",val:k.cobertura.toFixed(0)+"%",sub:"cobertura por regras"},
-  {lbl:"Entradas",val:brlShort(k.total_entradas),cls:"pos",sub:"período (6 meses)"},
-  {lbl:"Saídas",val:brlShort(k.total_saidas),cls:"neg",sub:"período (6 meses)"},
-  {lbl:"Saldo",val:brlShort(k.total_entradas-k.total_saidas),cls:"pos",sub:"entradas − saídas"},
-].map(x=>`<div class="kpi"><div class="lbl">${x.lbl}</div><div class="val ${x.cls||''}">${x.val}</div><div class="sub">${x.sub}</div></div>`).join("");
+const TX = DADOS.transacoes.map(t=>({...t, mes:(t.d||"").slice(0,7)}));
+let fonteSel = "__all__";
+let mesSel = "__all__";
 
-// Barras por categoria
-const maxCat = Math.max(...DADOS.categorias.map(c=>c.valor));
-document.getElementById("bars").innerHTML = DADOS.categorias.map(c=>`
-  <div class="bar-row">
-    <span class="name">${c.nome}</span>
-    <span class="track"><span class="fill" style="width:${(c.valor/maxCat*100).toFixed(1)}%"></span></span>
-    <span class="amt">${brlShort(c.valor)}</span>
-  </div>`).join("");
+// subtitle + badge
+document.getElementById("subtitle").textContent = DADOS.meta.subtitle || "Consolidador pessoal via Open Finance";
+const badge = document.getElementById("fonte-badge");
+badge.textContent = DADOS.meta.exemplo ? "dados de exemplo" : "dados reais";
+if(!DADOS.meta.exemplo){ badge.classList.add("live"); }
 
-// Recorrências
-document.getElementById("rec").innerHTML = DADOS.recorrencias.map(r=>`
-  <li><span class="rn">${r.nome}</span><span class="rv">${brl(r.valor)}</span><span class="mo">${r.meses}m</span></li>`).join("");
+// monta abas de fonte
+const fontes = [...new Map(TX.map(t=>[fonteKey(t), fonteLabel(t)]))];
+const tabsEl = document.getElementById("tabs-fonte");
+tabsEl.innerHTML = `<button class="tab" data-f="__all__" aria-pressed="true">Resumo Total</button>` +
+  fontes.map(([k,l])=>`<button class="tab" data-f="${k}" aria-pressed="false">${l}</button>`).join("");
+tabsEl.addEventListener("click",e=>{
+  const b=e.target.closest(".tab"); if(!b)return;
+  fonteSel=b.dataset.f;
+  [...tabsEl.children].forEach(x=>x.setAttribute("aria-pressed", x===b));
+  render();
+});
 
-// Gráfico de barras agrupadas (SVG)
-function desenharGrafico(){
-  const W=560,H=300, pad={t:16,r:12,b:38,l:52};
-  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
-  const m=DADOS.meses;
-  const maxV=Math.ceil(Math.max(...m.map(d=>Math.max(d.entradas,d.saidas)))/1000)*1000;
-  const x0=i=> pad.l + i*(iw/m.length);
-  const bw=(iw/m.length);
-  const y=v=> pad.t + ih - (v/maxV)*ih;
-  const css=getComputedStyle(document.documentElement);
-  const cGrid=css.getPropertyValue('--grid'), cMut=css.getPropertyValue('--muted'),
-        cPos=css.getPropertyValue('--pos'), cNeg=css.getPropertyValue('--neg'), cAcc=css.getPropertyValue('--accent');
-  let s="";
-  // grid + eixo Y
-  for(let i=0;i<=4;i++){const v=maxV*i/4; const yy=y(v);
-    s+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="${cGrid}" stroke-width="1"/>`;
-    s+=`<text x="${pad.l-8}" y="${yy+4}" text-anchor="end" font-size="10" font-family="IBM Plex Mono,monospace" fill="${cMut}">${(v/1000).toFixed(0)}k</text>`;
-  }
-  // barras
-  m.forEach((d,i)=>{
-    const cx=x0(i), gap=6, barW=(bw-gap*2-6)/2;
-    const xe=cx+gap, xs=xe+barW+6;
-    s+=`<rect x="${xe}" y="${y(d.entradas)}" width="${barW}" height="${pad.t+ih-y(d.entradas)}" rx="3" fill="${cPos}"/>`;
-    s+=`<rect x="${xs}" y="${y(d.saidas)}" width="${barW}" height="${pad.t+ih-y(d.saidas)}" rx="3" fill="${cNeg}"/>`;
-    s+=`<text x="${cx+bw/2}" y="${H-pad.b+18}" text-anchor="middle" font-size="10.5" font-family="IBM Plex Mono,monospace" fill="${cMut}">${d.mes.slice(5)}/${d.mes.slice(2,4)}</text>`;
-  });
-  // linha de saldo
-  const pts=m.map((d,i)=>`${x0(i)+bw/2},${y(d.saldo)}`).join(" ");
-  s+=`<polyline points="${pts}" fill="none" stroke="${cAcc}" stroke-width="2" stroke-linejoin="round"/>`;
-  m.forEach((d,i)=>{ s+=`<circle cx="${x0(i)+bw/2}" cy="${y(d.saldo)}" r="3" fill="${cAcc}"/>`; });
-  document.getElementById("chart").innerHTML=s;
+// seletor de mês
+const meses = [...new Set(TX.map(t=>t.mes))].filter(Boolean).sort();
+document.getElementById("sel-mes").innerHTML =
+  `<option value="__all__">Todos os meses</option>` +
+  meses.map(m=>`<option value="${m}">${m.slice(5)}/${m.slice(0,4)}</option>`).join("");
+document.getElementById("sel-mes").addEventListener("change",e=>{ mesSel=e.target.value; render(); });
+
+function filtradas(){
+  return TX.filter(t=>
+    (fonteSel==="__all__" || fonteKey(t)===fonteSel) &&
+    (mesSel==="__all__" || t.mes===mesSel));
 }
-desenharGrafico();
 
-// toggle de tema — redesenha o gráfico com as cores novas
+function render(){
+  const f = filtradas();
+  const passadas = f.filter(t=>t.d<=HOJE);
+  const saidas = passadas.filter(t=>t.v<0);
+  const entradas = passadas.filter(t=>t.v>0);
+  const totS = saidas.reduce((a,t)=>a+Math.abs(t.v),0);
+  const totE = entradas.reduce((a,t)=>a+t.v,0);
+  const classif = passadas.filter(t=>t.cat && t.cat!=="Outros").length;
+  const cob = passadas.length ? Math.round(100*classif/passadas.length) : 0;
+
+  // KPIs
+  document.getElementById("kpis").innerHTML = [
+    {lbl:"Transações", val:passadas.length, sub: fonteSel==="__all__" ? `${fontes.length} fontes` : fonteLabel(f[0]||{banco:"",conta:""})},
+    {lbl:"Categorização", val:cob+"%", sub:"cobertura"},
+    {lbl:"Entradas", val:brlShort(totE), cls:"pos", sub:mesSel==="__all__"?"no período":"no mês"},
+    {lbl:"Saídas", val:brlShort(totS), cls:"neg", sub:mesSel==="__all__"?"no período":"no mês"},
+    {lbl:"Saldo", val:brlShort(totE-totS), cls:(totE-totS)>=0?"pos":"neg", sub:"entradas − saídas"},
+  ].map(x=>`<div class="kpi"><div class="lbl">${x.lbl}</div><div class="val ${x.cls||''}">${x.val}</div><div class="sub">${x.sub}</div></div>`).join("");
+
+  // categorias
+  const porCat={};
+  saidas.forEach(t=>{const c=t.cat||"Outros"; porCat[c]=(porCat[c]||0)+Math.abs(t.v);});
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+  const maxCat=cats.length?cats[0][1]:1;
+  document.getElementById("bars").innerHTML = cats.length ?
+    cats.map(([c,v])=>`<div class="bar-row"><span class="name">${c}</span><span class="track"><span class="fill" style="width:${(v/maxCat*100).toFixed(1)}%"></span></span><span class="amt">${brlShort(v)}</span></div>`).join("")
+    : `<div class="empty">Sem saídas no filtro.</div>`;
+
+  // evolução mensal (ignora filtro de mês; respeita a fonte)
+  desenharGrafico(fonteSel==="__all__" ? TX : TX.filter(t=>fonteKey(t)===fonteSel));
+
+  // maiores gastos
+  const top=[...saidas].sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).slice(0,8);
+  document.getElementById("maiores").innerHTML = top.length ?
+    top.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)} · ${t.cat||"Outros"}</span></li>`).join("")
+    : `<div class="empty">Sem gastos no filtro.</div>`;
+
+  // recorrentes (sobre a fonte, ignora mês)
+  const base = (fonteSel==="__all__" ? TX : TX.filter(t=>fonteKey(t)===fonteSel)).filter(t=>t.v<0);
+  const grp={};
+  base.forEach(t=>{const k=(t.desc||"").toLowerCase().replace(/\d/g,"").trim();
+    (grp[k]=grp[k]||{meses:new Set(),soma:0,n:0,ex:t.desc}).meses.add(t.mes); grp[k].soma+=Math.abs(t.v); grp[k].n++;});
+  const rec=Object.values(grp).filter(g=>g.meses.size>=3).sort((a,b)=>b.meses.size-a.meses.size).slice(0,6);
+  document.getElementById("recorrentes").innerHTML = rec.length ?
+    rec.map(g=>`<li><span class="d">${g.ex}</span><span class="v neg">${brl(g.soma/g.n)}</span><span class="sub">média/mês · <span class="chip">${g.meses.size} meses</span></span></li>`).join("")
+    : `<div class="empty">Nada recorrente ainda.</div>`;
+
+  // cobranças futuras
+  const fut = f.filter(t=>t.d>HOJE && t.v<0).sort((a,b)=>a.d<b.d?-1:1).slice(0,10);
+  document.getElementById("futuras").innerHTML = fut.length ?
+    fut.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)}/${t.d.slice(0,4)} · ${t.cat||"Outros"}</span></li>`).join("")
+    : `<div class="empty">Nenhuma cobrança futura lançada.</div>`;
+}
+
+function desenharGrafico(tx){
+  const W=560,H=290,pad={t:14,r:10,b:36,l:50};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const porMes={};
+  tx.forEach(t=>{const m=t.mes; if(!m)return; (porMes[m]=porMes[m]||{e:0,s:0}); if(t.v>0)porMes[m].e+=t.v; else porMes[m].s+=Math.abs(t.v);});
+  const ms=Object.keys(porMes).sort();
+  const svg=document.getElementById("chart");
+  if(!ms.length){ svg.innerHTML=""; return; }
+  const maxV=Math.max(1,...ms.map(m=>Math.max(porMes[m].e,porMes[m].s)));
+  const topV=Math.ceil(maxV/1000)*1000||maxV;
+  const x0=i=>pad.l+i*(iw/ms.length), bw=iw/ms.length;
+  const y=v=>pad.t+ih-(v/topV)*ih;
+  const css=getComputedStyle(document.documentElement);
+  const g=css.getPropertyValue('--grid'),mu=css.getPropertyValue('--muted'),
+        cp=css.getPropertyValue('--pos'),cn=css.getPropertyValue('--neg'),ca=css.getPropertyValue('--accent');
+  let s="";
+  for(let i=0;i<=4;i++){const v=topV*i/4,yy=y(v);
+    s+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="${g}" stroke-width="1"/>`;
+    s+=`<text x="${pad.l-8}" y="${yy+4}" text-anchor="end" font-size="10" font-family="IBM Plex Mono,monospace" fill="${mu}">${(v/1000).toFixed(v>=1000?0:1)}k</text>`;}
+  ms.forEach((m,i)=>{const cx=x0(i),gap=5,barW=(bw-gap*2-5)/2,xe=cx+gap,xs=xe+barW+5,d=porMes[m];
+    s+=`<rect x="${xe}" y="${y(d.e)}" width="${barW}" height="${pad.t+ih-y(d.e)}" rx="3" fill="${cp}"/>`;
+    s+=`<rect x="${xs}" y="${y(d.s)}" width="${barW}" height="${pad.t+ih-y(d.s)}" rx="3" fill="${cn}"/>`;
+    s+=`<text x="${cx+bw/2}" y="${H-pad.b+18}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono,monospace" fill="${mu}">${m.slice(5)}/${m.slice(2,4)}</text>`;});
+  svg.innerHTML=s;
+}
+
 document.getElementById("theme").addEventListener("click",()=>{
   const r=document.documentElement;
-  const dark = r.getAttribute("data-theme")==="dark" ||
-    (!r.getAttribute("data-theme") && matchMedia("(prefers-color-scheme:dark)").matches);
-  r.setAttribute("data-theme", dark?"light":"dark");
-  requestAnimationFrame(desenharGrafico);
+  const dark=r.getAttribute("data-theme")==="dark"||(!r.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme:dark)").matches);
+  r.setAttribute("data-theme",dark?"light":"dark");
+  requestAnimationFrame(render);
 });
-matchMedia("(prefers-color-scheme:dark)").addEventListener("change",desenharGrafico);
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change",render);
+render();
 </script>

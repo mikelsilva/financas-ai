@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import pandas as pd
-from financas_ai.core import analise, categorizador
+from financas_ai.core import categorizador
 
 CSV = Path("dados/meus_dados.csv")
 TEMPLATE = Path("dashboard.html")
@@ -32,25 +32,27 @@ def main() -> None:
         sys.exit(1)
 
     df = pd.read_csv(CSV, parse_dates=["data"])
+    df = df.dropna(subset=["data"])
 
-    cat = analise.gastos_por_categoria(df)
-    em = analise.evolucao_mensal(df)
-    rec = analise.possiveis_recorrencias(df).head(6)
-
+    bancos = sorted(df["banco"].dropna().unique().tolist())
+    # transações cruas: o dashboard calcula tudo (filtros por fonte e mês) no navegador
+    transacoes = [
+        {
+            "d": r["data"].strftime("%Y-%m-%d"),
+            "desc": str(r["descricao"])[:60],
+            "v": round(float(r["valor"]), 2),
+            "banco": str(r["banco"]),
+            "conta": str(r["conta"]),
+            "cat": (str(r["categoria"]) if pd.notna(r["categoria"]) else "Outros"),
+        }
+        for _, r in df.iterrows()
+    ]
     dados = {
-        "kpis": {
-            "transacoes": int(len(df)),
-            "bancos": sorted(df["banco"].dropna().unique().tolist()),
-            "cobertura": categorizador.cobertura(df),
-            "total_saidas": round(float(df[df["valor"] < 0]["valor"].sum()) * -1, 2),
-            "total_entradas": round(float(df[df["valor"] > 0]["valor"].sum()), 2),
+        "meta": {
+            "exemplo": False,
+            "subtitle": "Consolidador pessoal via Open Finance · " + " · ".join(bancos),
         },
-        "categorias": [{"nome": k, "valor": round(float(v), 2)} for k, v in cat.items()],
-        "meses": [{"mes": i, "entradas": round(float(r.entradas), 2),
-                   "saidas": round(float(r.saidas), 2), "saldo": round(float(r.saldo), 2)}
-                  for i, r in em.iterrows()],
-        "recorrencias": [{"nome": str(r["exemplo"])[:32], "valor": round(abs(float(r["valor_medio"])), 2),
-                          "meses": int(r["ocorrencias"])} for _, r in rec.iterrows()],
+        "transacoes": transacoes,
     }
 
     html = TEMPLATE.read_text(encoding="utf-8")
@@ -64,9 +66,10 @@ def main() -> None:
         sys.exit(1)
 
     SAIDA.write_text(html, encoding="utf-8")
+    cob = categorizador.cobertura(df)
     print(f"✅ Dashboard gerado: {SAIDA.resolve()}")
-    print(f"   {dados['kpis']['transacoes']} transações · cobertura {dados['kpis']['cobertura']}%")
-    print("   Abra o arquivo no navegador (dê dois cliques ou arraste pra uma aba).")
+    print(f"   {len(transacoes)} transações · {len(bancos)} fonte(s) · cobertura {cob}%")
+    print("   Abra no navegador:  start dashboard_local.html")
 
 
 if __name__ == "__main__":
