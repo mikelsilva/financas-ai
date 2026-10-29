@@ -43,23 +43,31 @@ def _get(caminho: str, api_key: str, params: dict | None = None) -> dict:
     return r.json()
 
 
-def _transacoes(api_key: str, account_id: str, dias: int = 720) -> list[dict]:
-    """Segue a paginacao da Pluggy (results/totalPages) e junta tudo.
+def _proximo_cursor(payload: dict) -> str | None:
+    """Acha o cursor da proxima pagina cobrindo os formatos que a Pluggy usa."""
+    return (payload.get("nextCursor")
+            or (payload.get("page") or {}).get("nextCursor")
+            or (payload.get("cursors") or {}).get("next"))
 
-    A Pluggy exige um intervalo de datas: sem 'from'/'to' o endpoint responde
-    410 Gone. Por padrao buscamos os ultimos ~24 meses.
+
+def _transacoes(api_key: str, account_id: str, dias: int = 720) -> list[dict]:
+    """Lê as transações via endpoint v2 (paginação por cursor).
+
+    Desde jun/2026 a Pluggy descontinuou o /transactions por página para contas
+    novas (responde 410 Gone); o caminho atual é /v2/transactions com cursor.
+    Buscamos os últimos ~24 meses por padrão.
     """
     de = (date.today() - timedelta(days=dias)).isoformat()
     ate = date.today().isoformat()
-    itens, pagina = [], 1
-    while True:
-        payload = _get("/transactions", api_key,
-                       {"accountId": account_id, "from": de, "to": ate,
-                        "page": pagina, "pageSize": 500})
+    itens: list[dict] = []
+    params = {"accountId": account_id, "from": de, "to": ate, "pageSize": 100}
+    for _ in range(200):  # teto de segurança contra loop
+        payload = _get("/v2/transactions", api_key, params)
         itens.extend(payload.get("results", []))
-        if pagina >= payload.get("totalPages", 1):
+        cursor = _proximo_cursor(payload)
+        if not cursor:
             break
-        pagina += 1
+        params["cursor"] = cursor
     return itens
 
 
