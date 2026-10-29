@@ -48,7 +48,9 @@ def main() -> None:
         print(" é no formato da chamada de transações. Me envie esta mensagem inteira.)")
         sys.exit(1)
 
-    df = categorizador.categorizar(df)
+    # preservar=True: mantém as entradas já classificadas por documento
+    # (Salário/Transferência entre contas) e só aplica regras nas saídas
+    df = categorizador.categorizar(df, preservar=True)
 
     Path("dados").mkdir(exist_ok=True)
     df.to_csv("dados/meus_dados.csv", index=False)

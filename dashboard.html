@@ -2,25 +2,21 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-  /* Layout: painel interativo — controles no topo, KPIs, dois gráficos, e listas (maiores gastos, recorrentes, futuras). */
+  /* Layout: duas visões (Painel / Consultor). Painel: controles, KPIs, gráficos e listas. Consultor: análise em texto. */
   :root{
     --bg:#f4f6f5; --surface:#ffffff; --ink:#15211e; --muted:#5c6b66; --line:#e2e8e4;
-    --accent:#0f766e; --accent-soft:#d5e8e4;
-    --pos:#15803d; --neg:#c2563b;
-    --grid:#eef2f0;
-    --shadow:0 1px 2px rgba(20,40,35,.05), 0 8px 24px rgba(20,40,35,.06);
-    --ff-display:"Sora",system-ui,sans-serif;
-    --ff-body:"Inter",system-ui,sans-serif;
-    --ff-data:"IBM Plex Mono",ui-monospace,monospace;
+    --accent:#0f766e; --accent-soft:#d5e8e4; --pos:#15803d; --neg:#c2563b; --warn:#b45309;
+    --grid:#eef2f0; --shadow:0 1px 2px rgba(20,40,35,.05), 0 8px 24px rgba(20,40,35,.06);
+    --ff-display:"Sora",system-ui,sans-serif; --ff-body:"Inter",system-ui,sans-serif; --ff-data:"IBM Plex Mono",ui-monospace,monospace;
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
     --bg:#0e1513; --surface:#162220; --ink:#e8efec; --muted:#9aaaa4; --line:#243430;
-    --accent:#4cc3b4; --accent-soft:#1d322e; --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
+    --accent:#4cc3b4; --accent-soft:#1d322e; --pos:#56c07a; --neg:#e08769; --warn:#d99a4e; --grid:#1b2825;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35); color-scheme:dark;
   }}
   :root[data-theme="dark"]{
     --bg:#0e1513; --surface:#162220; --ink:#e8efec; --muted:#9aaaa4; --line:#243430;
-    --accent:#4cc3b4; --accent-soft:#1d322e; --pos:#56c07a; --neg:#e08769; --grid:#1b2825;
+    --accent:#4cc3b4; --accent-soft:#1d322e; --pos:#56c07a; --neg:#e08769; --warn:#d99a4e; --grid:#1b2825;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35); color-scheme:dark;
   }
   *{box-sizing:border-box}
@@ -29,26 +25,26 @@
   .wrap{max-width:1120px;margin:0 auto;padding-block:30px 48px}
   .num{font-family:var(--ff-data);font-variant-numeric:tabular-nums}
 
-  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 20px;margin-bottom:22px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 20px;margin-bottom:18px}
   .brand h1{font-family:var(--ff-display);font-weight:700;font-size:clamp(1.5rem,4vw,2rem);margin:0;letter-spacing:-.02em}
   .brand p{margin:4px 0 0;color:var(--muted);font-size:.92rem}
   .flags{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center}
-  .flag{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
-    padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+  .flag{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
   .flag.live{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
-  .theme-btn{font-family:var(--ff-body);font-size:.8rem;cursor:pointer;background:var(--surface);
-    color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .theme-btn{font-family:var(--ff-body);font-size:.8rem;cursor:pointer;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
 
-  /* controles */
+  .viewnav{display:flex;gap:8px;margin-bottom:22px}
+  .vtab{font-family:var(--ff-display);font-weight:600;font-size:.95rem;cursor:pointer;border:1px solid var(--line);
+    background:var(--surface);color:var(--muted);border-radius:11px;padding:9px 18px}
+  .vtab[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+
   .controls{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-end;margin-bottom:22px}
   .ctl{display:flex;flex-direction:column;gap:7px;min-width:0}
   .ctl > span{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
   .tabs{display:flex;flex-wrap:wrap;gap:6px}
-  .tab{font-family:var(--ff-body);font-size:.85rem;cursor:pointer;border:1px solid var(--line);
-    background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 13px;white-space:nowrap}
+  .tab{font-family:var(--ff-body);font-size:.85rem;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 13px;white-space:nowrap}
   .tab[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
-  select{font-family:var(--ff-body);font-size:.85rem;background:var(--surface);color:var(--ink);
-    border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:150px}
+  select{font-family:var(--ff-body);font-size:.85rem;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:150px}
 
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:13px;margin-bottom:20px}
   .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 17px;box-shadow:var(--shadow)}
@@ -58,7 +54,6 @@
   .kpi .sub{font-size:.76rem;color:var(--muted);margin-top:2px}
 
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-  .grid2.b{grid-template-columns:1fr 1fr}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:19px 21px;box-shadow:var(--shadow);min-width:0}
   .card h2{font-family:var(--ff-display);font-weight:600;font-size:1.03rem;margin:0 0 2px}
   .card .cap{color:var(--muted);font-size:.8rem;margin:0 0 16px}
@@ -78,18 +73,35 @@
   .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
 
   .lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
-  .lista li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline;
-    padding:10px 0;border-bottom:1px solid var(--line)}
+  .lista li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
   .lista li:last-child{border-bottom:none}
   .lista .d{font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lista .sub{font-size:.72rem;color:var(--muted);grid-column:1}
   .lista .v{font-family:var(--ff-data);font-size:.84rem;white-space:nowrap}
   .lista .v.neg{color:var(--neg)} .lista .v.pos{color:var(--pos)}
-  .chip{font-size:.66rem;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 7px;font-weight:600}
+
+  /* consultor */
+  .cons-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .cons-head .ico{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;font-size:1.3rem;flex:none}
+  .cons-head h2{font-family:var(--ff-display);font-weight:700;font-size:1.25rem;margin:0}
+  .cons-head p{margin:2px 0 0;color:var(--muted);font-size:.85rem}
+  .cons-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+  .cons-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px 19px;box-shadow:var(--shadow)}
+  .cons-card h3{font-family:var(--ff-display);font-size:.98rem;margin:0 0 10px;display:flex;gap:8px;align-items:center}
+  .cons-card p{margin:0 0 8px;font-size:.9rem}
+  .cons-card p:last-child{margin-bottom:0}
+  .cons-card .big{font-family:var(--ff-data);font-size:1.5rem;font-weight:600}
+  .cons-card ul{margin:6px 0 0;padding-left:18px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
+  .tag{font-size:.74rem;font-weight:600;padding:2px 9px;border-radius:999px}
+  .tag.ok{color:var(--pos);background:color-mix(in srgb,var(--pos) 15%,transparent)}
+  .tag.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}
+  .tag.bad{color:var(--neg);background:color-mix(in srgb,var(--neg) 15%,transparent)}
+  .disc{margin-top:16px;font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 
   footer{margin-top:24px;color:var(--muted);font-size:.78rem;text-align:center}
   footer code{font-family:var(--ff-data);background:var(--grid);padding:1px 6px;border-radius:5px}
-  @media (max-width:680px){.grid2,.grid2.b{grid-template-columns:1fr}}
+  @media (max-width:680px){.grid2,.cons-grid{grid-template-columns:1fr}}
 </style>
 
 <div class="wrap">
@@ -105,65 +117,73 @@
     </div>
   </header>
 
+  <nav class="viewnav">
+    <button class="vtab" data-v="painel" aria-pressed="true" type="button">📊 Painel</button>
+    <button class="vtab" data-v="consultor" aria-pressed="false" type="button">💡 Consultor</button>
+  </nav>
+
   <div class="controls">
-    <label class="ctl">
-      <span>Fonte</span>
-      <div class="tabs" id="tabs-fonte"></div>
-    </label>
-    <label class="ctl">
-      <span>Mês</span>
-      <select id="sel-mes"></select>
-    </label>
+    <label class="ctl"><span>Fonte</span><div class="tabs" id="tabs-fonte"></div></label>
+    <label class="ctl"><span>Mês</span><select id="sel-mes"></select></label>
   </div>
 
-  <section class="kpis" id="kpis"></section>
+  <div id="view-painel">
+    <section class="kpis" id="kpis"></section>
 
-  <div class="grid2">
-    <section class="card">
-      <h2>Gastos por categoria</h2>
-      <p class="cap" id="cap-cat">Classificado pelo categorizador por regras</p>
-      <div class="bars" id="bars"></div>
+    <div class="grid2">
+      <section class="card">
+        <h2>Gastos por categoria</h2>
+        <p class="cap">Classificado pelo categorizador por regras</p>
+        <div class="bars" id="bars"></div>
+      </section>
+      <section class="card">
+        <h2>Evolução mensal</h2>
+        <p class="cap">Entradas e saídas por mês (R$)</p>
+        <figure><svg id="chart" viewBox="0 0 560 290" role="img" aria-label="Entradas e saídas por mês"></svg></figure>
+        <div class="legend"><span><i class="dot" style="background:var(--pos)"></i>Entradas</span><span><i class="dot" style="background:var(--neg)"></i>Saídas</span></div>
+      </section>
+    </div>
+
+    <div class="grid2">
+      <section class="card">
+        <h2>Maiores gastos</h2>
+        <p class="cap">No período/filtro selecionado</p>
+        <ul class="lista" id="maiores"></ul>
+      </section>
+      <section class="card">
+        <h2>Gastos mensais</h2>
+        <p class="cap">Total gasto em cada mês</p>
+        <ul class="lista" id="mensais"></ul>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Cobranças futuras</h2>
+      <p class="cap">Parcelas e débitos já lançados com data à frente</p>
+      <ul class="lista" id="futuras"></ul>
     </section>
-    <section class="card">
-      <h2>Evolução mensal</h2>
-      <p class="cap">Entradas e saídas por mês (R$)</p>
-      <figure><svg id="chart" viewBox="0 0 560 290" role="img" aria-label="Entradas e saídas por mês"></svg></figure>
-      <div class="legend">
-        <span><i class="dot" style="background:var(--pos)"></i>Entradas</span>
-        <span><i class="dot" style="background:var(--neg)"></i>Saídas</span>
+  </div>
+
+  <section id="view-consultor" hidden>
+    <div class="cons-head">
+      <div class="ico">💡</div>
+      <div>
+        <h2>Consultor financeiro</h2>
+        <p>Análise automática dos seus números no filtro selecionado</p>
       </div>
-    </section>
-  </div>
-
-  <div class="grid2 b">
-    <section class="card">
-      <h2>Maiores gastos</h2>
-      <p class="cap">No período/filtro selecionado</p>
-      <ul class="lista" id="maiores"></ul>
-    </section>
-    <section class="card">
-      <h2>Cobranças recorrentes</h2>
-      <p class="cap">Mesma cobrança em 3+ meses</p>
-      <ul class="lista" id="recorrentes"></ul>
-    </section>
-  </div>
-
-  <section class="card" style="margin-top:16px">
-    <h2>Cobranças futuras</h2>
-    <p class="cap">Parcelas e débitos já lançados com data à frente</p>
-    <ul class="lista" id="futuras"></ul>
+    </div>
+    <div class="cons-grid" id="cons-grid"></div>
+    <p class="disc">Esta é uma leitura automática baseada nas suas transações, para te dar visão — não é recomendação de investimento personalizada. Decisões sobre seu dinheiro são suas.</p>
   </section>
 
-  <footer>
-    Gerado pelo pipeline <code>financas_ai</code> · Open Finance (Pluggy) + conectores de arquivo · categorização e análises em pandas
-  </footer>
+  <footer>Gerado pelo pipeline <code>financas_ai</code> · Open Finance (Pluggy) · categorização e análises em pandas</footer>
 </div>
 
 <script>
 const DADOS = /*DADOS_INICIO*/{
   meta:{exemplo:true, subtitle:"Consolidador pessoal · dados de exemplo"},
   transacoes:[
-    {d:"2026-09-05",desc:"Salário",v:5500,banco:"nubank",conta:"conta corrente",cat:"Renda"},
+    {d:"2026-09-05",desc:"Salário - ACME LTDA",v:5500,banco:"nubank",conta:"conta corrente",cat:"Salário"},
     {d:"2026-09-07",desc:"iFood *Restaurante",v:-52.9,banco:"nubank",conta:"cartao",cat:"Delivery"},
     {d:"2026-09-09",desc:"Supermercado Pão de Açúcar",v:-210.4,banco:"nubank",conta:"conta corrente",cat:"Mercado"},
     {d:"2026-09-11",desc:"Uber *Trip",v:-28.5,banco:"nubank",conta:"cartao",cat:"Transporte"},
@@ -171,11 +191,12 @@ const DADOS = /*DADOS_INICIO*/{
     {d:"2026-09-18",desc:"Drogasil",v:-78.2,banco:"nubank",conta:"conta corrente",cat:"Saude"},
     {d:"2026-09-22",desc:"Aplicação RDB",v:-500,banco:"nubank",conta:"conta corrente",cat:"Investimentos"},
     {d:"2026-09-26",desc:"Amazon BR",v:-189.9,banco:"nubank",conta:"cartao",cat:"Compras"},
-    {d:"2026-10-05",desc:"Salário",v:5500,banco:"nubank",conta:"conta corrente",cat:"Renda"},
+    {d:"2026-10-05",desc:"Salário - ACME LTDA",v:5500,banco:"nubank",conta:"conta corrente",cat:"Salário"},
+    {d:"2026-10-05",desc:"Transferência entre contas",v:800,banco:"nubank",conta:"conta corrente",cat:"Transferência entre contas"},
     {d:"2026-10-06",desc:"Pix enviado - Aluguel",v:-1800,banco:"nubank",conta:"conta corrente",cat:"Moradia"},
     {d:"2026-10-07",desc:"iFood *Restaurante",v:-61.2,banco:"nubank",conta:"cartao",cat:"Delivery"},
     {d:"2026-10-10",desc:"Posto Shell",v:-160,banco:"nubank",conta:"cartao",cat:"Transporte"},
-    {d:"2026-10-12",desc:"PROCFIT ACADEMIA",v:-120.3,banco:"nubank",conta:"conta corrente",cat:"Saude"},
+    {d:"2026-10-12",desc:"PROCFIT ACADEMIA",v:-159.9,banco:"nubank",conta:"conta corrente",cat:"Saude"},
     {d:"2026-10-14",desc:"Spotify",v:-21.9,banco:"nubank",conta:"cartao",cat:"Assinaturas"},
     {d:"2026-10-19",desc:"Hortifruti Nações",v:-96.7,banco:"nubank",conta:"conta corrente",cat:"Mercado"},
     {d:"2026-10-24",desc:"Fisia Nike Ecommer 3/7",v:-110.1,banco:"nubank",conta:"cartao",cat:"Compras"},
@@ -186,134 +207,168 @@ const DADOS = /*DADOS_INICIO*/{
 
 const HOJE = new Date().toISOString().slice(0,10);
 const brl = v => "R$ " + v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
-const brlShort = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
+const brlS = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
 const cap = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
 const NOME_BANCO = {pluggy:"Nubank", nubank:"Nubank", c6:"C6", rico:"Rico"};
 const NOME_CONTA = {"conta corrente":"Conta", "cartao":"Cartão", "extrato":"Extrato", "corretora":"Corretora"};
 const fonteKey = t => t.banco+"|"+t.conta;
 const fonteLabel = t => (NOME_BANCO[t.banco]||cap(t.banco))+" · "+(NOME_CONTA[t.conta]||cap(t.conta));
+const mesNome = m => m.slice(5)+"/"+m.slice(0,4);
+const ENTRE_CONTAS = "Transferência entre contas";
 
 const TX = DADOS.transacoes.map(t=>({...t, mes:(t.d||"").slice(0,7)}));
-let fonteSel = "__all__";
-let mesSel = "__all__";
+let fonteSel="__all__", mesSel="__all__", view="painel";
 
-// subtitle + badge
 document.getElementById("subtitle").textContent = DADOS.meta.subtitle || "Consolidador pessoal via Open Finance";
-const badge = document.getElementById("fonte-badge");
+const badge=document.getElementById("fonte-badge");
 badge.textContent = DADOS.meta.exemplo ? "dados de exemplo" : "dados reais";
-if(!DADOS.meta.exemplo){ badge.classList.add("live"); }
+if(!DADOS.meta.exemplo) badge.classList.add("live");
 
-// monta abas de fonte
-const fontes = [...new Map(TX.map(t=>[fonteKey(t), fonteLabel(t)]))];
-const tabsEl = document.getElementById("tabs-fonte");
-tabsEl.innerHTML = `<button class="tab" data-f="__all__" aria-pressed="true">Resumo Total</button>` +
+// abas de fonte
+const fontes=[...new Map(TX.map(t=>[fonteKey(t),fonteLabel(t)]))];
+const tabsEl=document.getElementById("tabs-fonte");
+tabsEl.innerHTML=`<button class="tab" data-f="__all__" aria-pressed="true">Resumo Total</button>`+
   fontes.map(([k,l])=>`<button class="tab" data-f="${k}" aria-pressed="false">${l}</button>`).join("");
-tabsEl.addEventListener("click",e=>{
-  const b=e.target.closest(".tab"); if(!b)return;
-  fonteSel=b.dataset.f;
-  [...tabsEl.children].forEach(x=>x.setAttribute("aria-pressed", x===b));
-  render();
-});
+tabsEl.addEventListener("click",e=>{const b=e.target.closest(".tab");if(!b)return;
+  fonteSel=b.dataset.f;[...tabsEl.children].forEach(x=>x.setAttribute("aria-pressed",x===b));render();});
 
 // seletor de mês
-const meses = [...new Set(TX.map(t=>t.mes))].filter(Boolean).sort();
-document.getElementById("sel-mes").innerHTML =
-  `<option value="__all__">Todos os meses</option>` +
-  meses.map(m=>`<option value="${m}">${m.slice(5)}/${m.slice(0,4)}</option>`).join("");
-document.getElementById("sel-mes").addEventListener("change",e=>{ mesSel=e.target.value; render(); });
+const meses=[...new Set(TX.map(t=>t.mes))].filter(Boolean).sort();
+document.getElementById("sel-mes").innerHTML=`<option value="__all__">Todos os meses</option>`+
+  meses.map(m=>`<option value="${m}">${mesNome(m)}</option>`).join("");
+document.getElementById("sel-mes").addEventListener("change",e=>{mesSel=e.target.value;render();});
+
+// nav de visão
+document.querySelector(".viewnav").addEventListener("click",e=>{const b=e.target.closest(".vtab");if(!b)return;
+  view=b.dataset.v;[...document.querySelectorAll(".vtab")].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  document.getElementById("view-painel").hidden = view!=="painel";
+  document.getElementById("view-consultor").hidden = view!=="consultor";
+  render();});
 
 function filtradas(){
-  return TX.filter(t=>
-    (fonteSel==="__all__" || fonteKey(t)===fonteSel) &&
-    (mesSel==="__all__" || t.mes===mesSel));
+  return TX.filter(t=>(fonteSel==="__all__"||fonteKey(t)===fonteSel)&&(mesSel==="__all__"||t.mes===mesSel));
+}
+// métricas base de um conjunto (considerando só datas passadas)
+function metricas(arr){
+  const p=arr.filter(t=>t.d<=HOJE);
+  const ent=p.filter(t=>t.v>0), sai=p.filter(t=>t.v<0);
+  const entreContas=ent.filter(t=>t.cat===ENTRE_CONTAS).reduce((a,t)=>a+t.v,0);
+  const salario=ent.filter(t=>t.cat==="Salário").reduce((a,t)=>a+t.v,0);
+  const totE=ent.reduce((a,t)=>a+t.v,0), totS=sai.reduce((a,t)=>a+Math.abs(t.v),0);
+  const renda=totE-entreContas; // dinheiro novo (exclui mover entre contas próprias)
+  return {p,ent,sai,totE,totS,entreContas,salario,renda,saldo:renda-totS};
 }
 
 function render(){
-  const f = filtradas();
-  const passadas = f.filter(t=>t.d<=HOJE);
-  const saidas = passadas.filter(t=>t.v<0);
-  const entradas = passadas.filter(t=>t.v>0);
-  const totS = saidas.reduce((a,t)=>a+Math.abs(t.v),0);
-  const totE = entradas.reduce((a,t)=>a+t.v,0);
-  const classif = passadas.filter(t=>t.cat && t.cat!=="Outros").length;
-  const cob = passadas.length ? Math.round(100*classif/passadas.length) : 0;
+  if(view==="consultor"){ renderConsultor(); return; }
+  const f=filtradas(), m=metricas(f);
 
-  // KPIs
-  document.getElementById("kpis").innerHTML = [
-    {lbl:"Transações", val:passadas.length, sub: fonteSel==="__all__" ? `${fontes.length} fontes` : fonteLabel(f[0]||{banco:"",conta:""})},
-    {lbl:"Categorização", val:cob+"%", sub:"cobertura"},
-    {lbl:"Entradas", val:brlShort(totE), cls:"pos", sub:mesSel==="__all__"?"no período":"no mês"},
-    {lbl:"Saídas", val:brlShort(totS), cls:"neg", sub:mesSel==="__all__"?"no período":"no mês"},
-    {lbl:"Saldo", val:brlShort(totE-totS), cls:(totE-totS)>=0?"pos":"neg", sub:"entradas − saídas"},
+  document.getElementById("kpis").innerHTML=[
+    {lbl:"Transações",val:m.p.length,sub:fonteSel==="__all__"?`${fontes.length} fontes`:(f[0]?fonteLabel(f[0]):"—")},
+    {lbl:"Entradas",val:brlS(m.renda),cls:"pos",sub:m.entreContas?`+ ${brlS(m.entreContas)} entre contas`:"dinheiro novo"},
+    {lbl:"Saídas",val:brlS(m.totS),cls:"neg",sub:mesSel==="__all__"?"no período":"no mês"},
+    {lbl:"Saldo",val:brlS(m.saldo),cls:m.saldo>=0?"pos":"neg",sub:"renda − saídas"},
+    {lbl:"Poupança",val:(m.renda>0?Math.round(m.saldo/m.renda*100):0)+"%",cls:m.saldo>=0?"pos":"neg",sub:"do que entrou"},
   ].map(x=>`<div class="kpi"><div class="lbl">${x.lbl}</div><div class="val ${x.cls||''}">${x.val}</div><div class="sub">${x.sub}</div></div>`).join("");
 
-  // categorias
-  const porCat={};
-  saidas.forEach(t=>{const c=t.cat||"Outros"; porCat[c]=(porCat[c]||0)+Math.abs(t.v);});
-  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
-  const maxCat=cats.length?cats[0][1]:1;
-  document.getElementById("bars").innerHTML = cats.length ?
-    cats.map(([c,v])=>`<div class="bar-row"><span class="name">${c}</span><span class="track"><span class="fill" style="width:${(v/maxCat*100).toFixed(1)}%"></span></span><span class="amt">${brlShort(v)}</span></div>`).join("")
-    : `<div class="empty">Sem saídas no filtro.</div>`;
+  // categorias (só saídas)
+  const porCat={}; m.sai.forEach(t=>{const c=t.cat||"Outros";porCat[c]=(porCat[c]||0)+Math.abs(t.v);});
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]); const maxCat=cats.length?cats[0][1]:1;
+  document.getElementById("bars").innerHTML=cats.length?
+    cats.map(([c,v])=>`<div class="bar-row"><span class="name">${c}</span><span class="track"><span class="fill" style="width:${(v/maxCat*100).toFixed(1)}%"></span></span><span class="amt">${brlS(v)}</span></div>`).join(""):`<div class="empty">Sem saídas no filtro.</div>`;
 
-  // evolução mensal (ignora filtro de mês; respeita a fonte)
-  desenharGrafico(fonteSel==="__all__" ? TX : TX.filter(t=>fonteKey(t)===fonteSel));
+  desenharGrafico(fonteSel==="__all__"?TX:TX.filter(t=>fonteKey(t)===fonteSel));
 
   // maiores gastos
-  const top=[...saidas].sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).slice(0,8);
-  document.getElementById("maiores").innerHTML = top.length ?
-    top.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)} · ${t.cat||"Outros"}</span></li>`).join("")
-    : `<div class="empty">Sem gastos no filtro.</div>`;
+  const top=[...m.sai].sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).slice(0,8);
+  document.getElementById("maiores").innerHTML=top.length?
+    top.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)} · ${t.cat||"Outros"}</span></li>`).join(""):`<div class="empty">Sem gastos no filtro.</div>`;
 
-  // recorrentes (sobre a fonte, ignora mês)
-  const base = (fonteSel==="__all__" ? TX : TX.filter(t=>fonteKey(t)===fonteSel)).filter(t=>t.v<0);
-  const grp={};
-  base.forEach(t=>{const k=(t.desc||"").toLowerCase().replace(/\d/g,"").trim();
-    (grp[k]=grp[k]||{meses:new Set(),soma:0,n:0,ex:t.desc}).meses.add(t.mes); grp[k].soma+=Math.abs(t.v); grp[k].n++;});
-  const rec=Object.values(grp).filter(g=>g.meses.size>=3).sort((a,b)=>b.meses.size-a.meses.size).slice(0,6);
-  document.getElementById("recorrentes").innerHTML = rec.length ?
-    rec.map(g=>`<li><span class="d">${g.ex}</span><span class="v neg">${brl(g.soma/g.n)}</span><span class="sub">média/mês · <span class="chip">${g.meses.size} meses</span></span></li>`).join("")
-    : `<div class="empty">Nada recorrente ainda.</div>`;
+  // gastos mensais (total gasto por mês) — respeita fonte, ignora o filtro de mês
+  const baseFonte=(fonteSel==="__all__"?TX:TX.filter(t=>fonteKey(t)===fonteSel)).filter(t=>t.v<0&&t.d<=HOJE);
+  const porMes={}; baseFonte.forEach(t=>{porMes[t.mes]=(porMes[t.mes]||0)+Math.abs(t.v);});
+  const linhasMes=Object.entries(porMes).sort((a,b)=>a[0]<b[0]?1:-1);
+  document.getElementById("mensais").innerHTML=linhasMes.length?
+    linhasMes.map(([mm,v])=>`<li><span class="d">${mesNome(mm)}</span><span class="v neg">${brl(v)}</span></li>`).join(""):`<div class="empty">Sem dados.</div>`;
 
   // cobranças futuras
-  const fut = f.filter(t=>t.d>HOJE && t.v<0).sort((a,b)=>a.d<b.d?-1:1).slice(0,10);
-  document.getElementById("futuras").innerHTML = fut.length ?
-    fut.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)}/${t.d.slice(0,4)} · ${t.cat||"Outros"}</span></li>`).join("")
-    : `<div class="empty">Nenhuma cobrança futura lançada.</div>`;
+  const fut=f.filter(t=>t.d>HOJE&&t.v<0).sort((a,b)=>a.d<b.d?-1:1).slice(0,10);
+  document.getElementById("futuras").innerHTML=fut.length?
+    fut.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)}/${t.d.slice(0,4)} · ${t.cat||"Outros"}</span></li>`).join(""):`<div class="empty">Nenhuma cobrança futura lançada.</div>`;
+}
+
+function renderConsultor(){
+  const f=filtradas(), m=metricas(f);
+  const poup = m.renda>0 ? m.saldo/m.renda*100 : 0;
+  const porCat={}; m.sai.forEach(t=>{const c=t.cat||"Outros";porCat[c]=(porCat[c]||0)+Math.abs(t.v);});
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+  const top3=cats.slice(0,3);
+  const concentra = cats.length && m.totS>0 ? cats[0][1]/m.totS*100 : 0;
+  // assinaturas recorrentes (3+ meses) sobre a fonte
+  const baseF=(fonteSel==="__all__"?TX:TX.filter(t=>fonteKey(t)===fonteSel)).filter(t=>t.v<0);
+  const grp={}; baseF.forEach(t=>{const k=(t.desc||"").toLowerCase().replace(/\d/g,"").trim();(grp[k]=grp[k]||{ms:new Set(),soma:0,n:0,ex:t.desc}).ms.add(t.mes);grp[k].soma+=Math.abs(t.v);grp[k].n++;});
+  const rec=Object.values(grp).filter(g=>g.ms.size>=3).sort((a,b)=>b.soma/b.n-a.soma/a.n);
+  const assinMes=rec.reduce((a,g)=>a+g.soma/g.n,0);
+
+  const tagPoup = poup>=20?`<span class="tag ok">saudável</span>`: poup>=0?`<span class="tag warn">dá pra melhorar</span>`:`<span class="tag bad">no vermelho</span>`;
+  const divida = porCat["Dívidas"]||0;
+
+  const cards=[];
+  // 1. o que entrou
+  cards.push(`<div class="cons-card"><h3>💰 O que entrou</h3>
+    <p class="big pos">${brl(m.renda)}</p>
+    <p>Dinheiro novo no período${mesSel!=="__all__"?" ("+mesNome(mesSel)+")":""}.</p>
+    <ul>
+      <li>Salário (empresas/CNPJ): <b>${brl(m.salario)}</b></li>
+      ${m.entreContas?`<li>Entre suas contas (não é renda): ${brl(m.entreContas)}</li>`:""}
+      ${m.renda-m.salario-0>0.01?`<li>Outras entradas: ${brl(Math.max(0,m.renda-m.salario))}</li>`:""}
+    </ul></p></div>`);
+  // 2. como fechou
+  cards.push(`<div class="cons-card"><h3>📉 Como você fechou ${tagPoup}</h3>
+    <p>Você gastou <b>${brl(m.totS)}</b> e sobrou <b class="${m.saldo>=0?'':''}" style="color:${m.saldo>=0?'var(--pos)':'var(--neg)'}">${brl(m.saldo)}</b>.</p>
+    <p>Taxa de poupança: <b>${Math.round(poup)}%</b> do que entrou. ${poup>=20?"Acima de 20% é um ótimo ritmo.":poup>=0?"Uma meta comum é guardar 20%+ do que entra.":"Saíram mais do que entrou neste filtro — vale revisar os maiores gastos."}</p></div>`);
+  // 3. onde foi
+  cards.push(`<div class="cons-card"><h3>🧭 Onde o dinheiro foi</h3>
+    ${top3.length?`<ul>${top3.map(([c,v])=>`<li>${c}: <b>${brl(v)}</b> (${Math.round(v/m.totS*100)}%)</li>`).join("")}</ul>`:"<p>Sem saídas no filtro.</p>"}
+    ${concentra>=40?`<p style="margin-top:8px">⚠️ <b>${cats[0][0]}</b> sozinho é ${Math.round(concentra)}% dos seus gastos — concentração alta.</p>`:""}</div>`);
+  // 4. recomendações / o que fazer com o que entrou
+  const recs=[];
+  if(m.saldo<0) recs.push("Você fechou no vermelho: priorize cortar os 1–2 maiores gastos acima antes de qualquer investimento.");
+  else recs.push(`Sobrou ${brl(m.saldo)} — uma divisão comum é reserva de emergência primeiro (3–6 meses de gastos), depois investir o excedente.`);
+  if(divida>0) recs.push(`Há ${brl(divida)} em dívidas/renegociação. Quitar dívida de juros alto costuma render mais que investir.`);
+  if(assinMes>0) recs.push(`Assinaturas recorrentes somam ~${brl(assinMes)}/mês. Revise as que você não usa.`);
+  if(poup>=20) recs.push("Seu ritmo de poupança está bom; dá pra automatizar um aporte mensal fixo logo que o salário entra.");
+  cards.push(`<div class="cons-card"><h3>✅ Sugestões</h3><ul>${recs.map(r=>`<li>${r}</li>`).join("")}</ul></div>`);
+
+  document.getElementById("cons-grid").innerHTML=cards.join("");
 }
 
 function desenharGrafico(tx){
   const W=560,H=290,pad={t:14,r:10,b:36,l:50};
   const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
-  const porMes={};
-  tx.forEach(t=>{const m=t.mes; if(!m)return; (porMes[m]=porMes[m]||{e:0,s:0}); if(t.v>0)porMes[m].e+=t.v; else porMes[m].s+=Math.abs(t.v);});
-  const ms=Object.keys(porMes).sort();
-  const svg=document.getElementById("chart");
-  if(!ms.length){ svg.innerHTML=""; return; }
-  const maxV=Math.max(1,...ms.map(m=>Math.max(porMes[m].e,porMes[m].s)));
+  const pm={}; tx.forEach(t=>{const mm=t.mes;if(!mm)return;(pm[mm]=pm[mm]||{e:0,s:0});if(t.v>0&&t.cat!==ENTRE_CONTAS)pm[mm].e+=t.v;else if(t.v<0)pm[mm].s+=Math.abs(t.v);});
+  const ms=Object.keys(pm).sort(); const svg=document.getElementById("chart");
+  if(!ms.length){svg.innerHTML="";return;}
+  const maxV=Math.max(1,...ms.map(mm=>Math.max(pm[mm].e,pm[mm].s)));
   const topV=Math.ceil(maxV/1000)*1000||maxV;
-  const x0=i=>pad.l+i*(iw/ms.length), bw=iw/ms.length;
-  const y=v=>pad.t+ih-(v/topV)*ih;
+  const x0=i=>pad.l+i*(iw/ms.length), bw=iw/ms.length, y=v=>pad.t+ih-(v/topV)*ih;
   const css=getComputedStyle(document.documentElement);
-  const g=css.getPropertyValue('--grid'),mu=css.getPropertyValue('--muted'),
-        cp=css.getPropertyValue('--pos'),cn=css.getPropertyValue('--neg'),ca=css.getPropertyValue('--accent');
+  const g=css.getPropertyValue('--grid'),mu=css.getPropertyValue('--muted'),cp=css.getPropertyValue('--pos'),cn=css.getPropertyValue('--neg');
   let s="";
   for(let i=0;i<=4;i++){const v=topV*i/4,yy=y(v);
     s+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="${g}" stroke-width="1"/>`;
     s+=`<text x="${pad.l-8}" y="${yy+4}" text-anchor="end" font-size="10" font-family="IBM Plex Mono,monospace" fill="${mu}">${(v/1000).toFixed(v>=1000?0:1)}k</text>`;}
-  ms.forEach((m,i)=>{const cx=x0(i),gap=5,barW=(bw-gap*2-5)/2,xe=cx+gap,xs=xe+barW+5,d=porMes[m];
+  ms.forEach((mm,i)=>{const cx=x0(i),gap=5,barW=(bw-gap*2-5)/2,xe=cx+gap,xs=xe+barW+5,d=pm[mm];
     s+=`<rect x="${xe}" y="${y(d.e)}" width="${barW}" height="${pad.t+ih-y(d.e)}" rx="3" fill="${cp}"/>`;
     s+=`<rect x="${xs}" y="${y(d.s)}" width="${barW}" height="${pad.t+ih-y(d.s)}" rx="3" fill="${cn}"/>`;
-    s+=`<text x="${cx+bw/2}" y="${H-pad.b+18}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono,monospace" fill="${mu}">${m.slice(5)}/${m.slice(2,4)}</text>`;});
+    s+=`<text x="${cx+bw/2}" y="${H-pad.b+18}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono,monospace" fill="${mu}">${mm.slice(5)}/${mm.slice(2,4)}</text>`;});
   svg.innerHTML=s;
 }
 
 document.getElementById("theme").addEventListener("click",()=>{
   const r=document.documentElement;
   const dark=r.getAttribute("data-theme")==="dark"||(!r.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme:dark)").matches);
-  r.setAttribute("data-theme",dark?"light":"dark");
-  requestAnimationFrame(render);
-});
+  r.setAttribute("data-theme",dark?"light":"dark");requestAnimationFrame(render);});
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change",render);
 render();
 </script>

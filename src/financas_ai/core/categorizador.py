@@ -46,14 +46,24 @@ def categorizar_texto(descricao: str) -> str:
     return CATEGORIA_PADRAO
 
 
-def categorizar(df: pd.DataFrame) -> pd.DataFrame:
-    """Preenche a coluna 'categoria' do DataFrame inteiro.
+def categorizar(df: pd.DataFrame, preservar: bool = False) -> pd.DataFrame:
+    """Preenche a coluna 'categoria' do DataFrame.
+
+    Com preservar=True, só classifica as linhas sem categoria (NA ou 'Outros'),
+    mantendo as que já vieram prontas de um conector — como as entradas que o
+    conector Pluggy classifica por documento (Salário / Transferência entre
+    contas). Com preservar=False, (re)classifica tudo pelas regras.
 
     Regra de negocio: entradas (valor > 0) que nao casaram com nada viram
     'Renda' por padrao, porque quase todo credito nao-classificado e receita.
     """
     df = df.copy()
-    df["categoria"] = df["descricao"].map(categorizar_texto).astype("string")
+    if preservar and "categoria" in df.columns:
+        vazia = df["categoria"].isna() | (df["categoria"] == CATEGORIA_PADRAO)
+        df.loc[vazia, "categoria"] = df.loc[vazia, "descricao"].map(categorizar_texto)
+    else:
+        df["categoria"] = df["descricao"].map(categorizar_texto)
+    df["categoria"] = df["categoria"].astype("string")
     entrada_sem_cat = (df["valor"] > 0) & (df["categoria"] == CATEGORIA_PADRAO)
     df.loc[entrada_sem_cat, "categoria"] = "Renda"
     return df

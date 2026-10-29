@@ -18,6 +18,7 @@ Credenciais ficam na SUA maquina (variaveis de ambiente), nunca no codigo.
 from __future__ import annotations
 
 import os
+import re
 from datetime import date, timedelta
 
 import pandas as pd
@@ -26,6 +27,52 @@ import requests
 from ..core import schema
 
 BASE = "https://api.pluggy.ai"
+
+
+def _digitos(v) -> str:
+    return re.sub(r"\D", "", str(v or ""))
+
+
+def _owner_doc(api_key: str, item: str) -> str | None:
+    """CPF do titular do item (para distinguir transferências entre contas próprias)."""
+    try:
+        r = _get("/identity", api_key, {"itemId": item})
+        res = (r.get("results") or [{}])
+        doc = res[0].get("taxNumber") or r.get("taxNumber")
+        return _digitos(doc) or None
+    except Exception:
+        return None
+
+
+def _doc_contraparte(t: dict) -> tuple[str, str]:
+    """(tipo, documento) de quem enviou/recebeu a transação, se a Pluggy informar.
+
+    tipo ∈ {"CPF","CNPJ",""}. Cobre variações de 'paymentData'.
+    """
+    pdata = t.get("paymentData") or {}
+    for papel in ("payer", "payerAccount", "receiver", "from", "to"):
+        info = pdata.get(papel) or {}
+        doc = info.get("documentNumber") or {}
+        val = doc.get("value") or doc.get("number") or (doc if isinstance(doc, str) else None)
+        if val:
+            tp = str(doc.get("type") or "").upper() if isinstance(doc, dict) else ""
+            dig = _digitos(val)
+            if not tp:
+                tp = "CNPJ" if len(dig) == 14 else "CPF" if len(dig) == 11 else ""
+            return tp, dig
+    return "", ""
+
+
+def _classificar_credito(t: dict, owner_doc: str | None) -> str:
+    """Classifica uma ENTRADA: CNPJ→Salário; mesmo CPF→transferência entre contas."""
+    tp, doc = _doc_contraparte(t)
+    if tp == "CNPJ":
+        return "Salário"
+    if doc and owner_doc and doc == owner_doc:
+        return "Transferência entre contas"
+    if tp == "CPF":
+        return "Pix recebido"
+    return "Renda"
 
 
 def _auth(client_id: str, client_secret: str) -> str:
@@ -102,13 +149,16 @@ def _transacoes(api_key: str, account_id: str, dias: int = 720) -> list[dict]:
     return itens
 
 
-def _para_linhas(trans: list[dict], conta: str) -> list[dict]:
+def _para_linhas(trans: list[dict], conta: str, owner_doc: str | None = None) -> list[dict]:
     linhas = []
     for t in trans:
         valor = abs(float(t.get("amount", 0) or 0))
         # DEBIT = saida (negativo); CREDIT = entrada (positivo)
         if str(t.get("type", "")).upper() == "DEBIT":
             valor = -valor
+        # entradas já saem classificadas pelo documento da contraparte;
+        # saídas ficam NA para o categorizador por regras resolver
+        categoria = _classificar_credito(t, owner_doc) if valor > 0 else pd.NA
         linhas.append({
             "data": pd.to_datetime(t.get("date"), errors="coerce", utc=True).tz_localize(None)
                     if t.get("date") else pd.NaT,
@@ -116,9 +166,7 @@ def _para_linhas(trans: list[dict], conta: str) -> list[dict]:
             "valor": valor,
             "banco": "pluggy",
             "conta": conta,
-            # a Pluggy ja devolve uma categoria; guardamos para o categorizador
-            # poder complementar/validar depois
-            "categoria": t.get("category") if t.get("category") else pd.NA,
+            "categoria": categoria,
             "id_origem": str(t.get("id") or ""),
         })
     return linhas
@@ -147,11 +195,12 @@ def ler(item_ids: list[str] | str,
     contas_lidas = 0
     erros: list[str] = []
     for item in item_ids:
+        owner_doc = _owner_doc(api_key, item)
         contas = _get("/accounts", api_key, {"itemId": item}).get("results", [])
         for acc in contas:
             tipo = "cartao" if str(acc.get("type", "")).upper() == "CREDIT" else "conta corrente"
             try:
-                linhas += _para_linhas(_transacoes(api_key, acc["id"]), tipo)
+                linhas += _para_linhas(_transacoes(api_key, acc["id"]), tipo, owner_doc)
                 contas_lidas += 1
             except Exception as e:
                 # nao derruba tudo por causa de uma conta problematica

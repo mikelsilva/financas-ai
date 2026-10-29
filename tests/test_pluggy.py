@@ -40,3 +40,33 @@ def test_schema_e_banco():
 def test_data_convertida():
     linhas = pluggy._para_linhas(TRANS, "conta corrente")
     assert all(isinstance(l["data"], pd.Timestamp) for l in linhas)
+
+
+def _credito(doc_tipo=None, doc_val=None):
+    t = {"id": "x", "amount": 1000, "type": "CREDIT", "date": "2026-10-05"}
+    if doc_val:
+        t["paymentData"] = {"payer": {"documentNumber": {"type": doc_tipo, "value": doc_val}}}
+    return t
+
+
+def test_entrada_cnpj_vira_salario():
+    # 14 dígitos = CNPJ -> Salário
+    assert pluggy._classificar_credito(_credito("CNPJ", "12345678000190"), "11122233344") == "Salário"
+
+
+def test_entrada_mesmo_cpf_vira_transferencia_entre_contas():
+    meu = "11122233344"
+    assert pluggy._classificar_credito(_credito("CPF", meu), meu) == "Transferência entre contas"
+
+
+def test_entrada_cpf_de_terceiro():
+    assert pluggy._classificar_credito(_credito("CPF", "99988877766"), "11122233344") == "Pix recebido"
+
+
+def test_entrada_sem_documento_vira_renda():
+    assert pluggy._classificar_credito(_credito(), "11122233344") == "Renda"
+
+
+def test_tipo_inferido_por_digitos():
+    # sem 'type', infere pelo nº de dígitos
+    assert pluggy._classificar_credito(_credito(None, "12.345.678/0001-90"), None) == "Salário"
