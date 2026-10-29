@@ -99,6 +99,18 @@
   .tag.bad{color:var(--neg);background:color-mix(in srgb,var(--neg) 15%,transparent)}
   .disc{margin-top:16px;font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 
+  /* extrato */
+  .ext-dia{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:20px 0 4px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  .ext-dia:first-child{margin-top:0}
+  .ext-data{font-family:var(--ff-display);font-weight:600;font-size:.9rem}
+  .ext-tot{font-family:var(--ff-data);font-size:.8rem;white-space:nowrap}
+  .ext-tot .pos{color:var(--pos)} .ext-tot .neg{color:var(--neg)}
+  .ext-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--grid)}
+  .ext-desc{font-size:.86rem;display:flex;flex-direction:column;gap:2px;min-width:0}
+  .ext-desc .ext-cat{font-size:.72rem;color:var(--muted)}
+  .ext-v{font-family:var(--ff-data);font-size:.86rem;white-space:nowrap}
+  .ext-v.pos{color:var(--pos)} .ext-v.neg{color:var(--neg)}
+
   footer{margin-top:24px;color:var(--muted);font-size:.78rem;text-align:center}
   footer code{font-family:var(--ff-data);background:var(--grid);padding:1px 6px;border-radius:5px}
   @media (max-width:680px){.grid2,.cons-grid{grid-template-columns:1fr}}
@@ -119,6 +131,7 @@
 
   <nav class="viewnav">
     <button class="vtab" data-v="painel" aria-pressed="true" type="button">📊 Painel</button>
+    <button class="vtab" data-v="extrato" aria-pressed="false" type="button">📄 Extrato</button>
     <button class="vtab" data-v="consultor" aria-pressed="false" type="button">💡 Consultor</button>
   </nav>
 
@@ -163,6 +176,14 @@
       <ul class="lista" id="futuras"></ul>
     </section>
   </div>
+
+  <section id="view-extrato" hidden>
+    <div class="card">
+      <h2>Extrato</h2>
+      <p class="cap">Tudo que entrou e saiu, dia a dia — respeita os filtros de fonte e mês</p>
+      <div id="extrato"></div>
+    </div>
+  </section>
 
   <section id="view-consultor" hidden>
     <div class="cons-head">
@@ -242,6 +263,7 @@ document.getElementById("sel-mes").addEventListener("change",e=>{mesSel=e.target
 document.querySelector(".viewnav").addEventListener("click",e=>{const b=e.target.closest(".vtab");if(!b)return;
   view=b.dataset.v;[...document.querySelectorAll(".vtab")].forEach(x=>x.setAttribute("aria-pressed",x===b));
   document.getElementById("view-painel").hidden = view!=="painel";
+  document.getElementById("view-extrato").hidden = view!=="extrato";
   document.getElementById("view-consultor").hidden = view!=="consultor";
   render();});
 
@@ -261,6 +283,7 @@ function metricas(arr){
 
 function render(){
   if(view==="consultor"){ renderConsultor(); return; }
+  if(view==="extrato"){ renderExtrato(); return; }
   const f=filtradas(), m=metricas(f);
 
   document.getElementById("kpis").innerHTML=[
@@ -295,6 +318,27 @@ function render(){
   const fut=f.filter(t=>t.d>HOJE&&t.v<0).sort((a,b)=>a.d<b.d?-1:1).slice(0,10);
   document.getElementById("futuras").innerHTML=fut.length?
     fut.map(t=>`<li><span class="d">${t.desc}</span><span class="v neg">${brl(t.v)}</span><span class="sub">${t.d.slice(8)}/${t.d.slice(5,7)}/${t.d.slice(0,4)} · ${t.cat||"Outros"}</span></li>`).join(""):`<div class="empty">Nenhuma cobrança futura lançada.</div>`;
+}
+
+function renderExtrato(){
+  const f=filtradas().filter(t=>t.d<=HOJE); // lançamentos realizados (futuras ficam no Painel)
+  const dias={}; f.forEach(t=>{(dias[t.d]=dias[t.d]||[]).push(t);});
+  const ord=Object.keys(dias).sort().reverse();
+  const el=document.getElementById("extrato");
+  if(!ord.length){ el.innerHTML=`<div class="empty">Sem lançamentos no filtro.</div>`; return; }
+  let h="";
+  ord.forEach(d=>{
+    const it=dias[d];
+    const ent=it.filter(t=>t.v>0).reduce((a,t)=>a+t.v,0);
+    const sai=it.filter(t=>t.v<0).reduce((a,t)=>a+Math.abs(t.v),0);
+    const [Y,M,D]=d.split("-");
+    h+=`<div class="ext-dia"><span class="ext-data">${D}/${M}/${Y}</span><span class="ext-tot">${ent?`<span class="pos">+${brlS(ent)}</span>`:""}${sai?` <span class="neg">−${brlS(sai)}</span>`:""}</span></div>`;
+    it.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+    it.forEach(t=>{
+      h+=`<div class="ext-row"><div class="ext-desc">${t.desc}<span class="ext-cat">${t.cat||"Outros"} · ${NOME_CONTA[t.conta]||cap(t.conta)}</span></div><div class="ext-v ${t.v>=0?'pos':'neg'}">${t.v>=0?'+ ':'− '}${brl(Math.abs(t.v))}</div></div>`;
+    });
+  });
+  el.innerHTML=h;
 }
 
 function renderConsultor(){
