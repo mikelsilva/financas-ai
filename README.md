@@ -64,6 +64,28 @@ tests/          pytest
 demo.py         demonstração ponta a ponta
 ```
 
+## Conector Pluggy — Open Finance real e gratuito (recomendado)
+
+O caminho mais robusto para dados ao vivo. A [Pluggy](https://www.pluggy.ai) é um agregador **regulado** de Open Finance; no plano **Meu Pluggy** você conecta suas próprias contas de graça (até 5, atualização a cada 24h) e consome a API oficial — **sem engenharia reversa, sem 403**.
+
+**Setup (uma vez):**
+1. Conecte suas contas em [meu.pluggy.ai](https://meu.pluggy.ai)
+2. No [dashboard.pluggy.ai](https://dashboard.pluggy.ai): crie uma aplicação, ative o conector **MeuPluggy**, copie **Client ID**, **Client Secret** e o **Item ID**
+3. Defina as variáveis de ambiente e rode:
+
+```bash
+# PowerShell
+$env:PLUGGY_CLIENT_ID="..."; $env:PLUGGY_CLIENT_SECRET="..."; $env:PLUGGY_ITEM_ID="..."
+python rodar_pluggy.py
+```
+
+```python
+from financas_ai.conectores import pluggy
+df = pluggy.ler(item_ids="seu-item-id")   # lê credenciais do ambiente
+```
+
+> As credenciais ficam na sua máquina (variáveis de ambiente). O `.gitignore` já bloqueia `.env`.
+
 ## Conector Nubank ao vivo (API não-oficial)
 
 Para quem usa Nubank, há um conector que puxa os dados direto da conta — sem exportar arquivo. Usa a biblioteca `pynubank` (engenharia reversa da API do app): faz o *discovery* dos endpoints, gera um certificado `.p12` no primeiro login (via QR code no app) e lê o feed da conta e a fatura do cartão por GraphQL.
