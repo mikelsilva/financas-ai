@@ -50,24 +50,55 @@ def _proximo_cursor(payload: dict) -> str | None:
             or (payload.get("cursors") or {}).get("next"))
 
 
+def _tentar(api_key: str, params: dict) -> requests.Response:
+    return requests.get(f"{BASE}/v2/transactions",
+                        headers={"X-API-KEY": api_key}, params=params, timeout=30)
+
+
 def _transacoes(api_key: str, account_id: str, dias: int = 720) -> list[dict]:
     """Lê as transações via endpoint v2 (paginação por cursor).
 
     Desde jun/2026 a Pluggy descontinuou o /transactions por página para contas
-    novas (responde 410 Gone); o caminho atual é /v2/transactions com cursor.
-    Buscamos os últimos ~24 meses por padrão.
+    novas (410 Gone); o caminho atual é /v2/transactions com cursor. Como o
+    contrato exato de parâmetros varia, tentamos combinações da mais completa
+    à mais simples e usamos a primeira que a API aceitar (200).
     """
     de = (date.today() - timedelta(days=dias)).isoformat()
     ate = date.today().isoformat()
-    itens: list[dict] = []
-    params = {"accountId": account_id, "from": de, "to": ate, "pageSize": 100}
-    for _ in range(200):  # teto de segurança contra loop
-        payload = _get("/v2/transactions", api_key, params)
-        itens.extend(payload.get("results", []))
-        cursor = _proximo_cursor(payload)
+    tentativas = [
+        {"accountId": account_id, "from": de, "to": ate, "pageSize": 100},
+        {"accountId": account_id, "from": de, "to": ate},
+        {"accountId": account_id, "pageSize": 100},
+        {"accountId": account_id},
+    ]
+
+    base = None
+    primeira = None
+    ultima: requests.Response | None = None
+    for p in tentativas:
+        r = _tentar(api_key, p)
+        ultima = r
+        if r.status_code == 200:
+            base, primeira = p, r.json()
+            break
+    if base is None:
+        corpo = ""
+        try:
+            corpo = (ultima.text or "")[:400]
+        except Exception:
+            pass
+        raise RuntimeError(
+            f"/v2/transactions respondeu {ultima.status_code}. Resposta da Pluggy: {corpo}"
+        )
+
+    itens: list[dict] = list(primeira.get("results", []))
+    cursor = _proximo_cursor(primeira)
+    for _ in range(200):  # teto de segurança
         if not cursor:
             break
-        params["cursor"] = cursor
+        payload = _get("/v2/transactions", api_key, {**base, "cursor": cursor})
+        itens.extend(payload.get("results", []))
+        cursor = _proximo_cursor(payload)
     return itens
 
 
@@ -122,7 +153,7 @@ def ler(item_ids: list[str] | str,
             try:
                 linhas += _para_linhas(_transacoes(api_key, acc["id"]), tipo)
                 contas_lidas += 1
-            except requests.HTTPError as e:
+            except Exception as e:
                 # nao derruba tudo por causa de uma conta problematica
                 erros.append(f"{acc.get('name') or acc['id']}: {e}")
 

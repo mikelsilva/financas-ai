@@ -43,8 +43,9 @@ def main() -> None:
     try:
         df = pluggy.ler(itens)
     except Exception as e:
-        print(f"❌ Não consegui ler da Pluggy: {e}")
-        print("Confira as variáveis PLUGGY_CLIENT_ID / PLUGGY_CLIENT_SECRET e o Item ID.")
+        print(f"❌ Não consegui ler da Pluggy:\n{e}")
+        print("\n(Se as contas foram listadas, as credenciais estão OK — o problema")
+        print(" é no formato da chamada de transações. Me envie esta mensagem inteira.)")
         sys.exit(1)
 
     df = categorizador.categorizar(df)
